@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
 #include <stdio.h>
 #include <windows.h>
 #include <WinSock2.h>
@@ -72,6 +73,57 @@ struct LogoutRetData : public DataHeader
 	int ret;
 };
 
+int processor(SOCKET client_sock)
+{
+	DataHeader header = {};
+
+	int len = recv(client_sock, (char*)&header, sizeof(DataHeader), 0);
+	if (len <= 0)
+	{
+		printf("客户端已退出，任务结束\n");
+		return -1;
+	}
+
+	switch (header.cmd)
+	{
+		case Cmd::kCmdLogin:
+		{
+			LoginData login_data = {};
+			recv(client_sock, (char*)&login_data + sizeof(DataHeader), sizeof(LoginData) - sizeof(DataHeader), 0);
+			printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data.data_len, login_data.user_name, login_data.password);
+
+			// 忽略判断账号密码逻辑
+			LoginRetData login_ret_data = {};
+			send(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
+		}
+		break;
+
+		case Cmd::kCmdLogout:
+		{
+			LogoutData logout_data = {};
+			recv(client_sock, (char*)&logout_data + sizeof(DataHeader), sizeof(LogoutData) - sizeof(DataHeader), 0);
+			printf("收到命令，cmd : kCmdLogout, 数据长度 ：%d, user_name : %s\n", logout_data.data_len, logout_data.user_name);
+
+			// 忽略判断账号密码逻辑
+			LogoutRetData logout_ret_data = {};
+			send(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
+		}
+		break;
+
+		default:
+		{
+			printf("收到错误命令，cmd : %d\n", header.cmd);
+
+			header.cmd = Cmd::kCmdError;
+			header.data_len = 0;
+			send(client_sock, (char*)&header, sizeof(DataHeader), 0);
+		}
+		break;
+	}
+
+	return 0;
+}
+
 int main()
 {
 	// 启动socket网络环境
@@ -107,68 +159,80 @@ int main()
 		printf("监听网络端口成功!\n");
 	}
 
-	// 等待客户端连接
-	sockaddr_in client_addr = {};
-	int size = sizeof(sockaddr_in);
-	SOCKET client_sock = accept(svr_sock, (sockaddr*)&client_addr, &size);
-	if (client_sock == INVALID_SOCKET)
-	{
-		printf("无效客户端socket!\n");
-	}
-	else
-	{
-		printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-	}
+	// 用于存放客户端socket
+	std::vector<SOCKET> sock_vec = {};
 
 	while (true)
 	{
-		DataHeader header = {};
+		// 伯克利socket集合
+		fd_set fd_read;
+		fd_set fd_write;
+		fd_set fd_exp;
 
-		int len = recv(client_sock, (char*)&header, sizeof(DataHeader), 0);
-		if (len <= 0)
+		// 清空集合
+		FD_ZERO(&fd_read);
+		FD_ZERO(&fd_write);
+		FD_ZERO(&fd_exp);
+
+		FD_SET(svr_sock, &fd_read);
+		FD_SET(svr_sock, &fd_write);
+		FD_SET(svr_sock, &fd_exp);
+
+		for (const auto& sock : sock_vec)
 		{
-			printf("客户端已退出，任务结束");
+			FD_SET(sock, &fd_read);
+		}
+
+		// nfds 是一个int， 是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
+		// windows 中可以传0
+		timeval time_val = { 0, 0 };
+		int select_ret = select(svr_sock + 1, &fd_read, &fd_write, &fd_exp, &time_val);
+		if (select_ret < 0)
+		{
+			printf("select_ret < 0，任务结束\n");
 			break;
 		}
 
-		switch (header.cmd)
+		if (FD_ISSET(svr_sock, &fd_read))
 		{
-		case Cmd::kCmdLogin:
-		{
-			LoginData login_data = {};
-			recv(client_sock, (char*)&login_data + sizeof(DataHeader), sizeof(LoginData) - sizeof(DataHeader), 0);
-			printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data.data_len, login_data.user_name, login_data.password);
+			// 说明客户端发送了数据/连接
+			FD_CLR(svr_sock, &fd_read);
 
-			// 忽略判断账号密码逻辑
-			LoginRetData login_ret_data = {};
-			send(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
-			break;
+			// 等待客户端连接
+			sockaddr_in client_addr = {};
+			int size = sizeof(sockaddr_in);
+			SOCKET client_sock = accept(svr_sock, (sockaddr*)&client_addr, &size);
+			if (client_sock == INVALID_SOCKET)
+			{
+				printf("无效客户端socket!\n");
+			}
+			else
+			{
+				printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
+				sock_vec.push_back(client_sock);
+			}
 		}
-		case Cmd::kCmdLogout:
-		{
-			LogoutData logout_data = {};
-			recv(client_sock, (char*)&logout_data + sizeof(DataHeader), sizeof(LogoutData) - sizeof(DataHeader), 0);
-			printf("收到命令，cmd : kCmdLogout, 数据长度 ：%d, user_name : %s\n", logout_data.data_len, logout_data.user_name);
 
-			// 忽略判断账号密码逻辑
-			LogoutRetData logout_ret_data = {};
-			send(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
-			break;
-		}
-		default:
+		for (size_t i = 0; i < fd_read.fd_count; i++)
 		{
-			printf("收到错误命令，cmd : %d\n", header.cmd);
-
-			header.cmd = Cmd::kCmdError;
-			header.data_len = 0;
-			send(client_sock, (char*)&header, sizeof(DataHeader), 0);
-			break;
-		}
+			// 说明客户端退出了
+			auto temp = fd_read.fd_array[i];
+			if (processor(temp) < 0)
+			{
+				auto iter = find(sock_vec.begin(), sock_vec.end(), temp);
+				if (iter != sock_vec.end())
+				{
+					sock_vec.erase(iter);
+				}
+			}
 		}
 	}
 
 	// 关闭套接字
-	closesocket(client_sock);
+	for (const auto& sock : sock_vec)
+	{
+		closesocket(sock);
+	}
 	closesocket(svr_sock);
 
 	WSACleanup(); // 终止 dll 的使用
