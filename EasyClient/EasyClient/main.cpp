@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <thread>
 #include <stdio.h>
 #include <windows.h>
 #include <WinSock2.h>
@@ -84,6 +85,49 @@ struct NewUserJoinData : public DataHeader
 	int sock;
 };
 
+bool can_run = true;
+void DealInput(SOCKET client_sock)
+{
+	while (true)
+	{
+		std::string input;
+		std::cout << "请输入命令：" << std::endl;
+		std::cin >> input;
+
+		if (input == "login")
+		{
+			LoginData login_data;
+			strcpy(login_data.user_name, "wangjunhe");
+			strcpy(login_data.password, "123456");
+			send(client_sock, (char*)&login_data, sizeof(LoginData), 0);
+
+			LoginRetData login_ret_data = {};
+			recv(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
+			printf("登录结果: %d \n", login_ret_data.ret);
+		}
+		else if (input == "logout")
+		{
+			LogoutData logout_data;
+			strcpy(logout_data.user_name, "wangjunhe");
+			send(client_sock, (char*)&logout_data, sizeof(LogoutData), 0);
+
+			LogoutRetData logout_ret_data = {};
+			recv(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
+			printf("登出结果: %d \n", logout_ret_data.ret);
+		}
+		else if (input == "exit")
+		{
+			printf("任务结束\n");
+			can_run = false;
+			break;
+		}
+		else
+		{
+			printf("错误的命令，请重新输入\n");
+		}
+	}
+}
+
 int processor(SOCKET sock)
 {
 	DataHeader header = {};
@@ -160,7 +204,10 @@ int main()
 		printf("连接服务器成功\n");
 	}
 
-	while (true)
+	std::thread input_thread(DealInput, client_sock);
+	input_thread.detach();
+
+	while (can_run)
 	{
 		// 伯克利socket集合
 		fd_set fd_read;
@@ -170,7 +217,8 @@ int main()
 
 		FD_SET(client_sock, &fd_read);
 
-		int select_ret = select(client_sock, &fd_read, nullptr, nullptr, nullptr);
+		timeval t = { 1,0 };
+		int select_ret = select(client_sock, &fd_read, nullptr, nullptr, &t);
 		if (select_ret < 0)
 		{
 			printf("select_ret < 0，任务结束\n");
@@ -188,44 +236,6 @@ int main()
 			}
 		}
 	}
-
-	/*while (true)
-	{
-		std::string input;
-		std::cout << "请输入命令：" << std::endl;
-		std::cin >> input;
-
-		if (input == "login")
-		{
-			LoginData login_data;
-			strcpy(login_data.user_name, "wangjunhe");
-			strcpy(login_data.password, "123456");
-			send(client_sock, (char*)&login_data, sizeof(LoginData), 0);
-
-			LoginRetData login_ret_data = {};
-			recv(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
-			printf("登录结果: %d \n", login_ret_data.ret);
-		}
-		else if(input == "logout")
-		{
-			LogoutData logout_data;
-			strcpy(logout_data.user_name, "wangjunhe");
-			send(client_sock, (char*)&logout_data, sizeof(LogoutData), 0);
-
-			LogoutRetData logout_ret_data = {};
-			recv(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
-			printf("登出结果: %d \n", logout_ret_data.ret);
-		}
-		else if (input == "exit")
-		{
-			printf("任务结束\n");
-			break;
-		}
-		else
-		{
-			printf("错误的命令，请重新输入\n");
-		}
-	}*/
 
 	// 关闭套接字
 	closesocket(client_sock);
