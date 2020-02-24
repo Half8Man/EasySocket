@@ -16,6 +16,7 @@ enum Cmd
 	kCmdLoginRet,
 	kCmdLogout,
 	kCmdLogoutRet,
+	kCmdNewUserJoin,
 	kCmdError
 };
 
@@ -71,6 +72,17 @@ struct LogoutRetData : public DataHeader
 	}
 
 	int ret;
+};
+
+struct NewUserJoinData : public DataHeader
+{
+	NewUserJoinData()
+	{
+		data_len = sizeof(NewUserJoinData);
+		cmd = Cmd::kCmdNewUserJoin;
+	}
+
+	int sock;
 };
 
 int processor(SOCKET client_sock)
@@ -208,6 +220,13 @@ int main()
 			}
 			else
 			{
+				for (const auto& sock : sock_vec)
+				{
+					NewUserJoinData new_user_join_data = {};
+					new_user_join_data.sock = int(client_sock);
+					send(sock, (char*)&new_user_join_data, sizeof(NewUserJoinData), 0);
+				}
+
 				printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
 				sock_vec.push_back(client_sock);
 			}

@@ -15,6 +15,7 @@ enum Cmd
 	kCmdLoginRet,
 	kCmdLogout,
 	kCmdLogoutRet,
+	kCmdNewUserJoin,
 	kCmdError
 };
 
@@ -72,6 +73,60 @@ struct LogoutRetData : public DataHeader
 	int ret;
 };
 
+struct NewUserJoinData : public DataHeader
+{
+	NewUserJoinData()
+	{
+		data_len = sizeof(NewUserJoinData);
+		cmd = Cmd::kCmdNewUserJoin;
+	}
+
+	int sock;
+};
+
+int processor(SOCKET sock)
+{
+	DataHeader header = {};
+	int len = recv(sock, (char*)&header, sizeof(DataHeader), 0);
+	if (len <= 0)
+	{
+		printf("与服务端连接断开，任务结束\n");
+		return -1;
+	}
+
+	switch (header.cmd)
+	{
+	case Cmd::kCmdLoginRet:
+	{
+		LoginRetData login_ret_data = {};
+		recv(sock, (char*)&login_ret_data + sizeof(DataHeader), sizeof(LoginRetData) - sizeof(DataHeader), 0);
+		printf("登录结果: %d \n", login_ret_data.ret);
+	}
+	break;
+
+	case Cmd::kCmdLogoutRet:
+	{
+		LogoutRetData logout_ret_data = {};
+		recv(sock, (char*)&logout_ret_data + sizeof(DataHeader), sizeof(LogoutRetData) - sizeof(DataHeader), 0);
+		printf("登出结果: %d \n", logout_ret_data.ret);
+	}
+	break;
+
+	case Cmd::kCmdNewUserJoin:
+	{
+		NewUserJoinData new_user_join_data;
+		recv(sock, (char*)&new_user_join_data + sizeof(DataHeader), sizeof(NewUserJoinData) - sizeof(DataHeader), 0);
+		printf("新用户加入, socket : %d \n", new_user_join_data.sock);
+	}
+	break;
+
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 int main()
 {
 	// 启动socket网络环境
@@ -107,6 +162,35 @@ int main()
 
 	while (true)
 	{
+		// 伯克利socket集合
+		fd_set fd_read;
+
+		// 清空集合
+		FD_ZERO(&fd_read);
+
+		FD_SET(client_sock, &fd_read);
+
+		int select_ret = select(client_sock, &fd_read, nullptr, nullptr, nullptr);
+		if (select_ret < 0)
+		{
+			printf("select_ret < 0，任务结束\n");
+			break;
+		}
+
+		if (FD_ISSET(client_sock, &fd_read))
+		{
+			FD_CLR(client_sock, &fd_read);
+
+			if (processor(client_sock) < 0)
+			{
+				printf("select 任务结束\n");
+				break;
+			}
+		}
+	}
+
+	/*while (true)
+	{
 		std::string input;
 		std::cout << "请输入命令：" << std::endl;
 		std::cin >> input;
@@ -141,7 +225,7 @@ int main()
 		{
 			printf("错误的命令，请重新输入\n");
 		}
-	}
+	}*/
 
 	// 关闭套接字
 	closesocket(client_sock);
