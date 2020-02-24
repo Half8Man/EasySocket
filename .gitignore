@@ -30,3 +30,9 @@
 *.exe
 *.out
 *.app
+
+#custome
+EasyServer/Debug/
+EasyServer/EasyServer/Debug/
+EasyClient/Debug/
+EasyClient/EasyClient/Debug/
