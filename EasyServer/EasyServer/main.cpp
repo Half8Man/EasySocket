@@ -87,50 +87,52 @@ struct NewUserJoinData : public DataHeader
 
 int processor(SOCKET client_sock)
 {
-	DataHeader header = {};
+	char buffer[4096] = {};
 
-	int len = recv(client_sock, (char*)&header, sizeof(DataHeader), 0);
+	int len = recv(client_sock, buffer, sizeof(DataHeader), 0);
 	if (len <= 0)
 	{
 		printf("¿Í»§¶ËÒÑÍË³ö£¬ÈÎÎñ½áÊø\n");
 		return -1;
 	}
 
-	switch (header.cmd)
+	DataHeader* header = (DataHeader*)buffer;
+
+	switch (header->cmd)
 	{
-		case Cmd::kCmdLogin:
-		{
-			LoginData login_data = {};
-			recv(client_sock, (char*)&login_data + sizeof(DataHeader), sizeof(LoginData) - sizeof(DataHeader), 0);
-			printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogin, Êý¾Ý³¤¶È £º%d, user_name : %s, password : %s\n", login_data.data_len, login_data.user_name, login_data.password);
+	case Cmd::kCmdLogin:
+	{
+		recv(client_sock, buffer + sizeof(DataHeader), header->data_len - sizeof(DataHeader), 0);
+		LoginData* login_data = (LoginData*)buffer;
+		printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogin, Êý¾Ý³¤¶È £º%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
-			// ºöÂÔÅÐ¶ÏÕËºÅÃÜÂëÂß¼­
-			LoginRetData login_ret_data = {};
-			send(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
-		}
-		break;
+		// ºöÂÔÅÐ¶ÏÕËºÅÃÜÂëÂß¼­
+		LoginRetData login_ret_data = {};
+		send(client_sock, (char*)&login_ret_data, sizeof(LoginRetData), 0);
+	}
+	break;
 
-		case Cmd::kCmdLogout:
-		{
-			LogoutData logout_data = {};
-			recv(client_sock, (char*)&logout_data + sizeof(DataHeader), sizeof(LogoutData) - sizeof(DataHeader), 0);
-			printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogout, Êý¾Ý³¤¶È £º%d, user_name : %s\n", logout_data.data_len, logout_data.user_name);
+	case Cmd::kCmdLogout:
+	{
+		recv(client_sock, buffer + sizeof(DataHeader), header->data_len - sizeof(DataHeader), 0);
+		LogoutData* logout_data = (LogoutData*)buffer;
+		printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogout, Êý¾Ý³¤¶È £º%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
 
-			// ºöÂÔÅÐ¶ÏÕËºÅÃÜÂëÂß¼­
-			LogoutRetData logout_ret_data = {};
-			send(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
-		}
-		break;
+		// ºöÂÔÅÐ¶ÏÕËºÅÃÜÂëÂß¼­
+		LogoutRetData logout_ret_data = {};
+		send(client_sock, (char*)&logout_ret_data, sizeof(LogoutRetData), 0);
+	}
+	break;
 
-		default:
-		{
-			printf("ÊÕµ½´íÎóÃüÁî£¬cmd : %d\n", header.cmd);
+	default:
+	{
+		printf("ÊÕµ½´íÎóÃüÁî£¬cmd : %d\n", header->cmd);
 
-			header.cmd = Cmd::kCmdError;
-			header.data_len = 0;
-			send(client_sock, (char*)&header, sizeof(DataHeader), 0);
-		}
-		break;
+		header->cmd = Cmd::kCmdError;
+		header->data_len = 0;
+		send(client_sock, (char*)&header, sizeof(DataHeader), 0);
+	}
+	break;
 	}
 
 	return 0;
