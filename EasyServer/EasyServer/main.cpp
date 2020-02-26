@@ -9,7 +9,7 @@ int main()
 	server.InitSocket();
 	server.Bind(kIp.c_str(), kPort);
 	server.Listen(20);
-	
+
 	while (server.IsAlive())
 	{
 		server.OnRun();
