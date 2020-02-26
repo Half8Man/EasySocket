@@ -9,7 +9,7 @@ void DealInput(EasyTcpClient* client)
 	while (true)
 	{
 		std::string input;
-		std::cout << "ÇëÊäÈëÃüÁî£º" << std::endl;
+		std::cout << "è¯·è¾“å…¥å‘½ä»¤ï¼š" << std::endl;
 		std::cin >> input;
 
 		if (input == "login")
@@ -27,17 +27,21 @@ void DealInput(EasyTcpClient* client)
 		}
 		else if (input == "exit")
 		{
-			printf("ÈÎÎñ½áÊø\n");
+			printf("ä»»åŠ¡ç»“æŸ\n");
 			can_run = false;
 			break;
 		}
 		else
 		{
-			printf("´íÎóµÄÃüÁî£¬ÇëÖØÐÂÊäÈë\n");
+			printf("é”™è¯¯çš„å‘½ä»¤ï¼Œè¯·é‡æ–°è¾“å…¥\n");
 		}
+
+		//LoginData login_data;
+		//strcpy(login_data.user_name, "wangjunhe");
+		//strcpy(login_data.password, "123456");
+		//client->SendData(&login_data, login_data.data_len);
 	}
 }
-
 
 int main()
 {
