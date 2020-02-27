@@ -1,4 +1,4 @@
-#ifndef __EASY_TCP_CLIENT_HPP__
+﻿#ifndef __EASY_TCP_CLIENT_HPP__
 #define __EASY_TCP_CLIENT_HPP__
 
 #define WIN32_LEAN_AND_MEAN
@@ -149,6 +149,8 @@ public:
 				break;
 			}
 		}
+
+		return 0;
 	}
 
 	int DealMsg(DataHeader* header)
@@ -158,21 +160,21 @@ public:
 		case Cmd::kCmdLoginRet:
 		{
 			LoginRetData* login_ret_data = (LoginRetData*)header;
-			//printf("登录结果: %d \n", login_ret_data->ret);
+			printf("登录结果: %d \n", login_ret_data->ret);
 		}
 		break;
 
 		case Cmd::kCmdLogoutRet:
 		{
 			LogoutRetData* logout_ret_data = (LogoutRetData*)header;
-			//printf("登出结果: %d \n", logout_ret_data->ret);
+			printf("登出结果: %d \n", logout_ret_data->ret);
 		}
 		break;
 
 		case Cmd::kCmdNewUserJoin:
 		{
 			NewUserJoinData* new_user_join_data = (NewUserJoinData*)header;
-			//printf("新用户加入, socket : %d \n", new_user_join_data->sock);
+			printf("新用户加入, socket : %d \n", new_user_join_data->sock);
 		}
 		break;
 

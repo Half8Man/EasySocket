@@ -1,4 +1,4 @@
-#include "EasyTcpClient.hpp"
+﻿#include "EasyTcpClient.hpp"
 
 const std::string kIp = "127.0.0.1";
 const int kPort = 1234;
@@ -35,11 +35,6 @@ void DealInput(EasyTcpClient* client)
 		{
 			printf("错误的命令，请重新输入\n");
 		}
-
-		//LoginData login_data;
-		//strcpy(login_data.user_name, "wangjunhe");
-		//strcpy(login_data.password, "123456");
-		//client->SendData(&login_data, login_data.data_len);
 	}
 }
 

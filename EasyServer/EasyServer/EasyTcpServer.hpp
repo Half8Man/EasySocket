@@ -1,4 +1,4 @@
-#ifndef __EASY_TCP_SERVER_HPP__
+﻿#ifndef __EASY_TCP_SERVER_HPP__
 #define __EASY_TCP_SERVER_HPP__
 
 #define WIN32_LEAN_AND_MEAN
@@ -12,13 +12,61 @@
 
 #include "Message.hpp"
 
+// 数据缓冲区最小单元大小
+const int kBufferSize = 102400;
+
+class ClientSocket
+{
+public:
+	ClientSocket(SOCKET sock_fd = INVALID_SOCKET)
+		:socket_fd_(INVALID_SOCKET), last_pos_(0)
+	{
+		socket_fd_ = sock_fd;
+		memset(client_data_buffer_, 0, sizeof(client_data_buffer_));
+	}
+
+	virtual ~ClientSocket()
+	{
+
+	}
+
+	SOCKET GetSocketFd() const
+	{
+		return socket_fd_;
+	}
+
+	char* GetDataBuffer()
+	{
+		return client_data_buffer_;
+	}
+
+	void SetLastPos(int pos)
+	{
+		last_pos_ = pos;
+	}
+
+	int GetLastPos() const
+	{
+		return last_pos_;
+	}
+private:
+	SOCKET socket_fd_; // socket fd_set
+
+	// 数据缓冲区
+	char client_data_buffer_[kBufferSize * 10] = {};
+
+	int last_pos_ = 0;
+};
+
+// new 堆内存
 class EasyTcpServer
 {
 public:
 	EasyTcpServer()
 		:svr_sock_(INVALID_SOCKET)
 	{
-		sock_vec_ = {};
+		client_sock_vec_ = {};
+		memset(svr_data_buffer_, 0, sizeof(svr_data_buffer_));
 	}
 
 	virtual ~EasyTcpServer()
@@ -121,7 +169,7 @@ public:
 			SendData(&new_user_join_data, new_user_join_data.data_len);
 
 			printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-			sock_vec_.push_back(client_sock);
+			client_sock_vec_.push_back(new ClientSocket(client_sock));
 		}
 
 		return client_sock;
@@ -133,11 +181,18 @@ public:
 		if (svr_sock_ != INVALID_SOCKET)
 		{
 			// 关闭套接字
-			for (const auto& sock : sock_vec_)
+			for (const auto& client_scok : client_sock_vec_)
 			{
-				closesocket(sock);
+				if (client_scok)
+				{
+					int sock = client_scok->GetSocketFd();
+					closesocket(sock);
+					delete client_scok;
+				}
 			}
 			closesocket(svr_sock_);
+
+			client_sock_vec_.clear();
 
 			WSACleanup(); // 终止 dll 的使用
 		}
@@ -162,15 +217,21 @@ public:
 			FD_SET(svr_sock_, &fd_write);
 			FD_SET(svr_sock_, &fd_exp);
 
-			for (const auto& sock : sock_vec_)
+			SOCKET max_sock = svr_sock_;
+			for (const auto& client_sock : client_sock_vec_)
 			{
+				SOCKET sock = client_sock->GetSocketFd();
 				FD_SET(sock, &fd_read);
+				if (max_sock < sock)
+				{
+					max_sock = sock;
+				}
 			}
 
 			// nfds 是一个int， 是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 			// windows 中可以传0
 			timeval time_val = { 0, 0 };
-			int select_ret = select(svr_sock_ + 1, &fd_read, &fd_write, &fd_exp, &time_val);
+			int select_ret = select(max_sock + 1, &fd_read, &fd_write, &fd_exp, &time_val);
 			if (select_ret < 0)
 			{
 				printf("select_ret < 0，任务结束\n");
@@ -186,16 +247,20 @@ public:
 				Accept();
 			}
 
-			for (size_t i = 0; i < fd_read.fd_count; i++)
+			for (const auto client_sock : client_sock_vec_)
 			{
-				// 说明客户端退出了
-				auto temp = fd_read.fd_array[i];
-				if (RecvData(temp) < 0)
+				auto temp_sock = client_sock->GetSocketFd();
+				if (FD_ISSET(temp_sock, &fd_read))
 				{
-					auto iter = find(sock_vec_.begin(), sock_vec_.end(), temp);
-					if (iter != sock_vec_.end())
+					// 说明客户端退出了
+					if (RecvData(client_sock) < 0)
 					{
-						sock_vec_.erase(iter);
+						auto iter = find(client_sock_vec_.begin(), client_sock_vec_.end(), client_sock);
+						if (iter != client_sock_vec_.end())
+						{
+							delete client_sock;
+							client_sock_vec_.erase(iter);
+						}
 					}
 				}
 			}
@@ -213,21 +278,51 @@ public:
 	}
 
 	// 接受数据、处理粘包、拆分包
-	int RecvData(SOCKET client_sock)
+	int RecvData(ClientSocket* client_sock)
 	{
 		char buffer[4096] = {};
 
-		int len = recv(client_sock, buffer, sizeof(DataHeader), 0);
+		int len = recv(client_sock->GetSocketFd(), buffer, sizeof(DataHeader), 0);
 		if (len <= 0)
 		{
 			printf("客户端已退出，任务结束\n");
 			return -1;
 		}
 
-		DataHeader* header = (DataHeader*)buffer;
+		// 将收到的数据拷贝到消息缓冲区
+		memcpy(client_sock->GetDataBuffer() + client_sock->GetLastPos(), svr_data_buffer_, len);
 
-		recv(client_sock, buffer + sizeof(DataHeader), header->data_len - sizeof(DataHeader), 0);
-		onNetMsg(client_sock, header);
+		// 缓冲区的数据尾部后移
+		client_sock->SetLastPos(client_sock->GetLastPos() + len);
+
+		// 判断消息缓冲区的数据长度是都大于消息头DataHeader的长度
+		while (client_sock->GetLastPos() >= sizeof(DataHeader))
+		{
+			// 这时就可以知道当前消息的长度
+			DataHeader* header = (DataHeader*)client_sock->GetDataBuffer();
+
+			// 判断消息缓冲区的数据长度是否大于一条完整消息长度
+			if (client_sock->GetLastPos() >= header->data_len)
+			{
+				// 未处理的消息的长度
+				int size = client_sock->GetLastPos() - header->data_len;
+
+				// 处理消息
+				onNetMsg(client_sock->GetSocketFd(), header);
+
+				// 将消息缓冲区的未处理的数据前移
+				memcpy(client_sock->GetDataBuffer(), client_sock->GetDataBuffer() + header->data_len, size);
+
+				// 将消息缓冲区数据尾部位置前移
+				client_sock->SetLastPos(size);
+			}
+			else
+			{
+				// 缓冲区的数据长度不足一条完整消息长度
+				break;
+			}
+		}
+
 
 		return 0;
 	}
@@ -240,7 +335,7 @@ public:
 		case Cmd::kCmdLogin:
 		{
 			LoginData* login_data = (LoginData*)header;
-			printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+			//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
 			// 忽略判断账号密码逻辑
 			LoginRetData login_ret_data = {};
@@ -263,7 +358,7 @@ public:
 		{
 			printf("收到错误命令，cmd : %d\n", header->cmd);
 
-			DataHeader* temp;
+			DataHeader* temp = {};
 			temp->cmd = Cmd::kCmdError;
 			temp->data_len = 0;
 			(void)SendData(temp, temp->data_len, client_sock);
@@ -288,9 +383,9 @@ public:
 	{
 		if (IsAlive() && data)
 		{
-			for (const auto& client_sock : sock_vec_)
+			for (const auto& client_sock : client_sock_vec_)
 			{
-				return send(client_sock, (const char*)data, len, 0);
+				return send(client_sock->GetSocketFd(), (const char*)data, len, 0);
 			}
 		}
 
@@ -299,7 +394,8 @@ public:
 
 private:
 	SOCKET svr_sock_;
-	std::vector<SOCKET> sock_vec_;
+	char svr_data_buffer_[kBufferSize];
+	std::vector<ClientSocket*> client_sock_vec_;
 };
 
 #endif // !__EASY_TCP_SERVER_HPP__
