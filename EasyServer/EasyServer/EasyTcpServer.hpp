@@ -258,7 +258,6 @@ public:
 						auto iter = find(client_sock_vec_.begin(), client_sock_vec_.end(), client_sock);
 						if (iter != client_sock_vec_.end())
 						{
-							delete client_sock;
 							client_sock_vec_.erase(iter);
 						}
 					}
@@ -280,9 +279,7 @@ public:
 	// 接受数据、处理粘包、拆分包
 	int RecvData(ClientSocket* client_sock)
 	{
-		char buffer[4096] = {};
-
-		int len = recv(client_sock->GetSocketFd(), buffer, sizeof(DataHeader), 0);
+		int len = recv(client_sock->GetSocketFd(), svr_data_buffer_, kBufferSize, 0);
 		if (len <= 0)
 		{
 			printf("客户端已退出，任务结束\n");
@@ -335,7 +332,7 @@ public:
 		case Cmd::kCmdLogin:
 		{
 			LoginData* login_data = (LoginData*)header;
-			//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+			printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
 			// 忽略判断账号密码逻辑
 			LoginRetData login_ret_data = {};
@@ -358,10 +355,10 @@ public:
 		{
 			printf("收到错误命令，cmd : %d\n", header->cmd);
 
-			DataHeader* temp = {};
-			temp->cmd = Cmd::kCmdError;
-			temp->data_len = 0;
-			(void)SendData(temp, temp->data_len, client_sock);
+			DataHeader temp = {};
+			temp.cmd = Cmd::kCmdError;
+			temp.data_len = 0;
+			(void)SendData(&temp, temp.data_len, client_sock);
 		}
 		break;
 		}
