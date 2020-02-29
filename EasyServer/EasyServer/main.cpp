@@ -1,19 +1,18 @@
-#include "EasyTcpServer.hpp"
+#include "EasyTcpServer.h"
 
-const std::string kIp = "127.0.0.1";
+const char* kIp = "127.0.0.1";
 const int kPort = 1234;
 
 int main()
 {
 	EasyTcpServer server;
-	server.InitSocket();
-	server.Bind(kIp.c_str(), kPort);
+
+	server.InitSock();
+	server.Bind(kIp, kPort);
 	server.Listen(20);
 
-	while (server.IsAlive())
-	{
+	while (server.IsRun())
 		server.OnRun();
-	}
 
 	server.Close();
 
