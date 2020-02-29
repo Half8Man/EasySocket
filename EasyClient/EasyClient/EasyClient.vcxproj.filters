@@ -18,12 +18,15 @@
     <ClCompile Include="main.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="EasyTcpClient.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="EasyTcpClient.hpp">
+    <ClInclude Include="CommonDef.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="Message.hpp">
+    <ClInclude Include="EasyTcpClient.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

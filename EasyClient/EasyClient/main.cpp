@@ -1,4 +1,4 @@
-﻿#include "EasyTcpClient.hpp"
+﻿#include "EasyTcpClient.h"
 
 const std::string kIp = "127.0.0.1";
 const int kPort = 1234;
@@ -17,13 +17,13 @@ void DealInput(EasyTcpClient* client)
 			LoginData login_data;
 			strcpy(login_data.user_name, "wangjunhe");
 			strcpy(login_data.password, "123456");
-			client->SendData(&login_data, login_data.data_len);
+			client->SendData(&login_data);
 		}
 		else if (input == "logout")
 		{
 			LogoutData logout_data;
 			strcpy(logout_data.user_name, "wangjunhe");
-			client->SendData(&logout_data, logout_data.data_len);
+			client->SendData(&logout_data);
 		}
 		else if (input == "exit")
 		{
@@ -47,13 +47,15 @@ int main()
 	std::thread input_thread(DealInput, &client);
 	input_thread.detach();
 
-	while (client.IsAlive() && can_run)
+	while (client.IsRun() && can_run)
 	{
-		if (client.OnRequest() < 0)
+		if (client.OnRun() < 0)
 		{
 			break;
 		}
 	}
+
+	system("pause");
 
 	client.Close();
 

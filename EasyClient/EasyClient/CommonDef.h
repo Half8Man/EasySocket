@@ -1,5 +1,8 @@
-﻿#ifndef __MESSAGE_HPP__
-#define __MESSAGE_HPP__
+﻿#ifndef __COMMON_DEF_H__
+#define __COMMON_DEF_H__
+
+// 数据缓冲区最小单元大小
+const int kBufferSize = 10240;
 
 enum Cmd
 {
@@ -26,8 +29,8 @@ struct LoginData : public DataHeader
 		cmd = Cmd::kCmdLogin;
 	}
 
-	char user_name[64];
-	char password[64];
+	char user_name[64] = {};
+	char password[64] = {};
 };
 
 struct LoginRetData : public DataHeader
@@ -50,7 +53,7 @@ struct LogoutData : public DataHeader
 		cmd = Cmd::kCmdLogout;
 	}
 
-	char user_name[64];
+	char user_name[64] = {};
 };
 
 struct LogoutRetData : public DataHeader
@@ -73,7 +76,7 @@ struct NewUserJoinData : public DataHeader
 		cmd = Cmd::kCmdNewUserJoin;
 	}
 
-	int sock;
+	int sock = 0;
 };
 
-#endif // !__MESSAGE_HPP__
+#endif // !__COMMON_DEF_H__
