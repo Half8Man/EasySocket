@@ -1,4 +1,4 @@
-#include "EasyTcpClient.h"
+ï»¿#include "EasyTcpClient.h"
 
 EasyTcpClient::EasyTcpClient()
 	:client_sock_(INVALID_SOCKET), last_pos(0)
@@ -21,26 +21,26 @@ SOCKET EasyTcpClient::InitSocket()
 {
 	if (client_sock_ != INVALID_SOCKET)
 	{
-		printf("¹Ø±Õ¾ÉµÄÁ¬½Ó\n");
+		printf("å…³é—­æ—§çš„è¿æ¥\n");
 		Close();
 	}
 
 #ifdef _WIN32
-	// Æô¶¯socketÍøÂç»·¾³
+	// å¯åŠ¨socketç½‘ç»œç¯å¢ƒ
 	WORD version = MAKEWORD(2, 2);
 	WSADATA data;
 	(void)WSAStartup(version, &data);
 #endif
 
-	// ´´½¨socketÌ×½Ó×Ö
+	// åˆ›å»ºsocketå¥—æ¥å­—
 	client_sock_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (client_sock_ == INVALID_SOCKET)
 	{
-		printf("´´½¨socketÊ§°Ü\n");
+		printf("åˆ›å»ºsocketå¤±è´¥\n");
 		return -1;
 	}
 
-	printf("´´½¨socket³É¹¦£¬ socket : %d\n", int(socket));
+	printf("åˆ›å»ºsocketæˆåŠŸï¼Œ socket : %d\n", int(socket));
 	return 0;
 }
 
@@ -49,7 +49,7 @@ int EasyTcpClient::Connect(const char* ip, unsigned short port)
 	if (client_sock_ == INVALID_SOCKET)
 		(void)InitSocket();
 
-	// Á¬½Ó·şÎñÆ÷
+	// è¿æ¥æœåŠ¡å™¨
 	sockaddr_in client_addr;
 	memset(&client_addr, 0, sizeof(sockaddr_in));
 	client_addr.sin_family = PF_INET;
@@ -58,9 +58,9 @@ int EasyTcpClient::Connect(const char* ip, unsigned short port)
 
 	auto ret = connect(client_sock_, (sockaddr*)&client_addr, sizeof(sockaddr_in));
 	if (ret == SOCKET_ERROR)
-		printf("Á¬½Ó·şÎñÆ÷Ê§°Ü\n");
+		printf("è¿æ¥æœåŠ¡å™¨å¤±è´¥\n");
 	else
-		printf("Á¬½Ó·şÎñÆ÷³É¹¦\n");
+		printf("è¿æ¥æœåŠ¡å™¨æˆåŠŸ\n");
 
 	return ret;
 }
@@ -68,10 +68,10 @@ int EasyTcpClient::Connect(const char* ip, unsigned short port)
 void EasyTcpClient::Close()
 {
 #ifdef _WIN32
-	// ¹Ø±ÕÌ×½Ó×Ö
+	// å…³é—­å¥—æ¥å­—
 	closesocket(client_sock_);
 
-	WSACleanup(); // ÖÕÖ¹ dll µÄÊ¹ÓÃ
+	WSACleanup(); // ç»ˆæ­¢ dll çš„ä½¿ç”¨
 #else
 	close(client_sock_);
 #endif
@@ -92,38 +92,38 @@ int EasyTcpClient::OnRecvData()
 	int len = recv(client_sock_, first_data_buffer_, kBufferSize, 0);
 	if (len <= 0)
 	{
-		printf("Óë·şÎñ¶ËÁ¬½Ó¶Ï¿ª£¬ÈÎÎñ½áÊø\n");
+		printf("ä¸æœåŠ¡ç«¯è¿æ¥æ–­å¼€ï¼Œä»»åŠ¡ç»“æŸ\n");
 		return -1;
 	}
 
-	// ½«µÚÒ»»º³åÇøµÄÊı¾İ¿½±´µ½µÚ¶ş»º³åÇø
+	// å°†ç¬¬ä¸€ç¼“å†²åŒºçš„æ•°æ®æ‹·è´åˆ°ç¬¬äºŒç¼“å†²åŒº
 	memcpy(second_data_buffer_ + last_pos, first_data_buffer_, len);
 
-	// µÚ¶şÏûÏ¢»º³åÇøÊı¾İÎ²²¿Î»ÖÃºóÒÆ
+	// ç¬¬äºŒæ¶ˆæ¯ç¼“å†²åŒºæ•°æ®å°¾éƒ¨ä½ç½®åç§»
 	last_pos += len;
 
-	// ÅĞ¶ÏÏûÏ¢»º³åÇøµÄÊı¾İ³¤¶ÈÊÇ·ñ´óÓÚÏûÏ¢Í·DataHeaderµÄ³¤¶È
+	// åˆ¤æ–­æ¶ˆæ¯ç¼“å†²åŒºçš„æ•°æ®é•¿åº¦æ˜¯å¦å¤§äºæ¶ˆæ¯å¤´DataHeaderçš„é•¿åº¦
 	while (last_pos >= sizeof(DataHeader))
 	{
-		// ´ËÊ±¿ÉÍ¨¹ıheaderÖªµÀÏûÏ¢×Ü³¤¶È
+		// æ­¤æ—¶å¯é€šè¿‡headerçŸ¥é“æ¶ˆæ¯æ€»é•¿åº¦
 		DataHeader* header = (DataHeader*)second_data_buffer_;
 
-		// ÅĞ¶ÏÏûÏ¢»º³åÇøµÄÊı¾İ³¤¶ÈÊÇ·ñ´óÓÚÏûÏ¢×Ü³¤¶È
+		// åˆ¤æ–­æ¶ˆæ¯ç¼“å†²åŒºçš„æ•°æ®é•¿åº¦æ˜¯å¦å¤§äºæ¶ˆæ¯æ€»é•¿åº¦
 		if (last_pos >= header->data_len)
 		{
-			// Ê£ÓàÎ´´¦ÀíµÄÏûÏ¢»º³åÇøµÄ³¤¶È
+			// å‰©ä½™æœªå¤„ç†çš„æ¶ˆæ¯ç¼“å†²åŒºçš„é•¿åº¦
 			int len = last_pos - header->data_len;
 
-			// ´¦ÀíÏûÏ¢
+			// å¤„ç†æ¶ˆæ¯
 			DealMsg(header);
 
-			// Î´´¦ÀíÊı¾İÇ°ÒÆ
+			// æœªå¤„ç†æ•°æ®å‰ç§»
 			memcpy(second_data_buffer_, first_data_buffer_ + header->data_len, len);
 			last_pos = len;
 		}
 		else
 		{
-			// Ê£ÓàÊı¾İ²»×ãÒ»ÌõÍêÕûµÄÏûÏ¢
+			// å‰©ä½™æ•°æ®ä¸è¶³ä¸€æ¡å®Œæ•´çš„æ¶ˆæ¯
 			break;
 		}
 	}
@@ -138,33 +138,33 @@ int EasyTcpClient::DealMsg(DataHeader* header)
 	case Cmd::kCmdLoginRet:
 	{
 		LoginRetData* login_ret_data = (LoginRetData*)header;
-		printf("µÇÂ¼½á¹û: %d \n", login_ret_data->ret);
+		//printf("ç™»å½•ç»“æœ: %d \n", login_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdLogoutRet:
 	{
 		LogoutRetData* logout_ret_data = (LogoutRetData*)header;
-		printf("µÇ³ö½á¹û: %d \n", logout_ret_data->ret);
+		//printf("ç™»å‡ºç»“æœ: %d \n", logout_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdNewUserJoin:
 	{
 		NewUserJoinData* new_user_join_data = (NewUserJoinData*)header;
-		printf("ĞÂÓÃ»§¼ÓÈë, socket : %d \n", new_user_join_data->sock);
+		//printf("æ–°ç”¨æˆ·åŠ å…¥, socket : %d \n", new_user_join_data->sock);
 	}
 	break;
 
 	case Cmd::kCmdError:
 	{
-		printf("ÊÕµ½´íÎóµÄÏûÏ¢\n");
+		printf("æ”¶åˆ°é”™è¯¯çš„æ¶ˆæ¯\n");
 	}
 	break;
 
 	default:
 	{
-		printf("ÊÕµ½Î´¶¨ÒåµÄÏûÏ¢\n");
+		printf("æ”¶åˆ°æœªå®šä¹‰çš„æ¶ˆæ¯\n");
 	}
 	break;
 	}
@@ -176,10 +176,10 @@ int EasyTcpClient::OnRun()
 {
 	if (IsRun())
 	{
-		// ²®¿ËÀûsocket¼¯ºÏ
+		// ä¼¯å…‹åˆ©socketé›†åˆ
 		fd_set fd_read;
 
-		// Çå¿Õ¼¯ºÏ
+		// æ¸…ç©ºé›†åˆ
 		FD_ZERO(&fd_read);
 
 		FD_SET(client_sock_, &fd_read);
@@ -188,7 +188,7 @@ int EasyTcpClient::OnRun()
 		int select_ret = select(client_sock_ + 1, &fd_read, nullptr, nullptr, &t);
 		if (select_ret < 0)
 		{
-			printf("select_ret < 0£¬ÈÎÎñ½áÊø\n");
+			printf("select_ret < 0ï¼Œä»»åŠ¡ç»“æŸ\n");
 			Close();
 			return -1;
 		}
@@ -199,7 +199,7 @@ int EasyTcpClient::OnRun()
 
 			if (OnRecvData() < 0)
 			{
-				printf("select ÈÎÎñ½áÊø\n");
+				printf("select ä»»åŠ¡ç»“æŸ\n");
 				Close();
 				return -1;
 			}

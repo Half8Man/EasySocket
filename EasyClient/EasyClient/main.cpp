@@ -40,24 +40,60 @@ void DealInput(EasyTcpClient* client)
 
 int main()
 {
-	EasyTcpClient client;
-	client.InitSocket();
-	client.Connect(kIp.c_str(), kPort);
+	//EasyTcpClient client;
+	//client.InitSocket();
+	//client.Connect(kIp.c_str(), kPort);
 
-	std::thread input_thread(DealInput, &client);
-	input_thread.detach();
+	//std::thread input_thread(DealInput, &client);
+	//input_thread.detach();
 
-	while (client.IsRun() && can_run)
+	//while (client.IsRun() && can_run)
+	//{
+	//	if (client.OnRun() < 0)
+	//	{
+	//		break;
+	//	}
+	//}
+
+	//system("pause");
+
+	//client.Close();
+
+	EasyTcpClient* clients[10];
+
+	for (auto& client : clients)
 	{
-		if (client.OnRun() < 0)
+		client = new EasyTcpClient;
+	}
+
+	for (auto& client : clients)
+	{
+		client->InitSocket();
+	}
+
+	for (auto& client : clients)
+	{
+		client->Connect(kIp.c_str(), kPort);
+	}
+
+	LoginData login_data = {};
+	strcpy(login_data.user_name, "wangjunhe");
+	strcpy(login_data.password, "123456");
+
+	while (true)
+	{
+		for (auto& client : clients)
 		{
-			break;
+			//Sleep(10);
+			client->SendData(&login_data);
+			client->OnRun();
 		}
 	}
 
-	system("pause");
-
-	client.Close();
+	for (auto& client : clients)
+	{
+		client->Close();
+	}
 
 	return 0;
 }

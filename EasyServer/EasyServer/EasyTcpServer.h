@@ -24,6 +24,7 @@
 
 #include "CommonDef.h"
 #include "Client.hpp"
+#include "CELLTimeStamp.hpp"
 
 class Client;
 
@@ -50,6 +51,8 @@ private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
 	char data_buffer_[kBufferSize] = {};
 	std::vector<Client*> client_vec_ = {};
+	CELLTimeStamp time_stamp_;
+	int recv_count_ = 0;
 };
 
 #endif // !__EASY_TCP_SERVER_H__

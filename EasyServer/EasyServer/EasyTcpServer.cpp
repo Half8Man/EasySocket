@@ -1,7 +1,7 @@
 ﻿#include "EasyTcpServer.h"
 
 EasyTcpServer::EasyTcpServer()
-	:svr_sock_(INVALID_SOCKET)
+	:svr_sock_(INVALID_SOCKET), recv_count_(0)
 {
 	client_vec_ = {};
 	memset(data_buffer_, 0, sizeof(data_buffer_));
@@ -277,12 +277,21 @@ int EasyTcpServer::RecvData(Client* client)
 
 int EasyTcpServer::OnNetMsg(SOCKET client_sock, DataHeader* header)
 {
+	recv_count_++;
+	auto time_temp = time_stamp_.GetElapsedSecond();
+	if (time_temp >= 1.0)
+	{
+		printf("时间戳 ：%lf, 收到客户端请求次数 ：%d\n", time_temp, recv_count_);
+		time_stamp_.Update();
+		recv_count_ = 0;
+	}
+
 	switch (header->cmd)
 	{
 	case Cmd::kCmdLogin:
 	{
 		LoginData* login_data = (LoginData*)header;
-		printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
 		// 忽略判断账号密码逻辑
 		LoginRetData login_ret_data = {};
@@ -293,7 +302,7 @@ int EasyTcpServer::OnNetMsg(SOCKET client_sock, DataHeader* header)
 	case Cmd::kCmdLogout:
 	{
 		LogoutData* logout_data = (LogoutData*)header;
-		printf("收到命令，cmd : kCmdLogout, 数据长度 ：%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
+		//printf("收到命令，cmd : kCmdLogout, 数据长度 ：%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
 
 		// 忽略判断账号密码逻辑
 		LogoutRetData logout_ret_data = {};
