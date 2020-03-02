@@ -1,31 +1,57 @@
-﻿#include "EasyTcpClient.h"
+﻿#include <thread>
+
+#include "EasyTcpClient.h"
 
 const std::string kIp = "127.0.0.1";
 const int kPort = 1234;
 
+const int client_count = 1000;
+const int thread_count = 4;
+
 bool can_run = true;
-void DealInput(EasyTcpClient* client)
+
+EasyTcpClient* clients[client_count];
+
+void DealInput(/*EasyTcpClient* client*/)
 {
+
+	//while (true)
+	//{
+	//	std::string input;
+	//	std::cout << "请输入命令：" << std::endl;
+	//	std::cin >> input;
+
+	//	if (input == "login")
+	//	{
+	//		LoginData login_data;
+	//		strcpy(login_data.user_name, "wangjunhe");
+	//		strcpy(login_data.password, "123456");
+	//		client->SendData(&login_data);
+	//	}
+	//	else if (input == "logout")
+	//	{
+	//		LogoutData logout_data;
+	//		strcpy(logout_data.user_name, "wangjunhe");
+	//		client->SendData(&logout_data);
+	//	}
+	//	else if (input == "exit")
+	//	{
+	//		printf("任务结束\n");
+	//		can_run = false;
+	//		break;
+	//	}
+	//	else
+	//	{
+	//		printf("错误的命令，请重新输入\n");
+	//	}
+	//}
+
 	while (true)
 	{
 		std::string input;
-		std::cout << "请输入命令：" << std::endl;
 		std::cin >> input;
 
-		if (input == "login")
-		{
-			LoginData login_data;
-			strcpy(login_data.user_name, "wangjunhe");
-			strcpy(login_data.password, "123456");
-			client->SendData(&login_data);
-		}
-		else if (input == "logout")
-		{
-			LogoutData logout_data;
-			strcpy(logout_data.user_name, "wangjunhe");
-			client->SendData(&logout_data);
-		}
-		else if (input == "exit")
+		if (input == "exit")
 		{
 			printf("任务结束\n");
 			can_run = false;
@@ -35,6 +61,45 @@ void DealInput(EasyTcpClient* client)
 		{
 			printf("错误的命令，请重新输入\n");
 		}
+	}
+}
+
+void SendThread(int id)
+{
+	int begin = (id - 1) * (client_count / thread_count);
+	int end = id * (client_count / thread_count);
+
+	for (int i = begin; i < end; i++)
+	{
+		clients[i] = new EasyTcpClient;
+	}
+
+	for (int i = begin; i < end; i++)
+	{
+		clients[i]->InitSocket();
+	}
+
+	for (int i = begin; i < end; i++)
+	{
+		clients[i]->Connect(kIp.c_str(), kPort);
+	}
+
+	LoginData login_data = {};
+	strcpy(login_data.user_name, "wangjunhe");
+	strcpy(login_data.password, "123456");
+
+	while (can_run)
+	{
+		for (int i = begin; i < end; i++)
+		{
+			clients[i]->SendData(&login_data);
+			//clients[i]->OnRun();
+		}
+	}
+
+	for (int i = begin; i < end; i++)
+	{
+		clients[i]->Close();
 	}
 }
 
@@ -59,41 +124,22 @@ int main()
 
 	//client.Close();
 
-	EasyTcpClient* clients[10];
+	// 启动输入线程
+	std::thread input_thread(DealInput);
+	input_thread.detach();
 
-	for (auto& client : clients)
+	// 启动发送线程
+	for (int i = 0; i < thread_count; i++)
 	{
-		client = new EasyTcpClient;
+		std::thread send_thread(SendThread, i + 1);
+		send_thread.detach();
 	}
 
-	for (auto& client : clients)
+	while (can_run)
 	{
-		client->InitSocket();
+
 	}
 
-	for (auto& client : clients)
-	{
-		client->Connect(kIp.c_str(), kPort);
-	}
-
-	LoginData login_data = {};
-	strcpy(login_data.user_name, "wangjunhe");
-	strcpy(login_data.password, "123456");
-
-	while (true)
-	{
-		for (auto& client : clients)
-		{
-			//Sleep(10);
-			client->SendData(&login_data);
-			client->OnRun();
-		}
-	}
-
-	for (auto& client : clients)
-	{
-		client->Close();
-	}
-
+	system("pause");
 	return 0;
 }

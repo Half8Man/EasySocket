@@ -22,7 +22,6 @@
 
 #include <iostream>
 #include <string>
-#include <thread>
 #include <stdio.h>
 
 #include "CommonDef.h"
