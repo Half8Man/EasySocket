@@ -5,7 +5,7 @@
 const std::string kIp = "127.0.0.1";
 const int kPort = 1234;
 
-const int client_count = 1000;
+const int client_count = 100;
 const int thread_count = 4;
 
 bool can_run = true;
@@ -92,8 +92,16 @@ void SendThread(int id)
 	{
 		for (int i = begin; i < end; i++)
 		{
+			clients[i]->OnRun();
+		}
+
+		// 休眠1000毫秒
+		std::chrono::milliseconds sleep_time(1000);
+		std::this_thread::sleep_for(sleep_time);
+
+		for (int i = begin; i < end; i++)
+		{
 			clients[i]->SendData(&login_data);
-			//clients[i]->OnRun();
 		}
 	}
 

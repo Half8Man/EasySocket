@@ -3,6 +3,8 @@
 const char* kIp = "127.0.0.1";
 const int kPort = 1234;
 
+class EasyTcpServer;
+
 int main()
 {
 	EasyTcpServer server;
@@ -10,6 +12,7 @@ int main()
 	server.InitSock();
 	server.Bind(kIp, kPort);
 	server.Listen(20);
+	server.Start(kCellServerCount);
 
 	while (server.IsRun())
 		server.OnRun();

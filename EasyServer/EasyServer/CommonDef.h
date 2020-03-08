@@ -4,6 +4,9 @@
 // 数据缓冲区最小单元大小
 const int kBufferSize = 10240;
 
+// cell server 数量
+const int kCellServerCount = 4;
+
 enum Cmd
 {
 	kCmdLogin,

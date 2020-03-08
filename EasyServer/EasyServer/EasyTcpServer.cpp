@@ -1,10 +1,9 @@
 ﻿#include "EasyTcpServer.h"
 
 EasyTcpServer::EasyTcpServer()
-	:svr_sock_(INVALID_SOCKET), recv_count_(0)
+	:svr_sock_(INVALID_SOCKET), recv_count_(0), client_count_(0)
 {
-	client_vec_ = {};
-	memset(data_buffer_, 0, sizeof(data_buffer_));
+	cell_server_vec_ = {};
 }
 
 EasyTcpServer::~EasyTcpServer()
@@ -93,14 +92,37 @@ SOCKET EasyTcpServer::Accept()
 		printf("接受无效客户端socket\n");
 	else
 	{
-		NewUserJoinData new_user_json_data = {};
-		new_user_json_data.sock = int(client_sock);
-		(void)SendData(&new_user_json_data);
-
-		printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-		client_vec_.push_back(new Client(client_sock));
+		//printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
+		AddClient2CellServer(new Client(client_sock));
 	}
 	return client_sock;
+}
+
+void EasyTcpServer::Start(int cell_server_count)
+{
+	for (int i = 0; i < cell_server_count; i++)
+	{
+		CellServer* cell_server = new CellServer(svr_sock_, this);
+		cell_server_vec_.push_back(cell_server);
+		cell_server->Start();
+	}
+}
+
+void EasyTcpServer::AddClient2CellServer(Client* client)
+{
+	if (client)
+	{
+		// 查找客户端数量最小的CellServer
+		auto min_server = cell_server_vec_[0];
+		for (auto cell_server : cell_server_vec_)
+		{
+			if (cell_server->GetClientCount() < min_server->GetClientCount())
+			{
+				min_server = cell_server;
+			}
+		}
+		min_server->AddClient(client);
+	}
 }
 
 void EasyTcpServer::Close()
@@ -108,36 +130,12 @@ void EasyTcpServer::Close()
 	if (IsRun())
 	{
 #ifdef _WIN32
-		// 关闭客户端 socket
-		for (const auto& client : client_vec_)
-		{
-			if (client)
-			{
-				SOCKET sock = client->GetSock();
-				closesocket(sock);
-				delete client;
-			}
-		}
-		client_vec_.clear();
-
 		// 关闭服务端 socket
 		closesocket(svr_sock_);
 
 		// 清楚 win socket 网络环境
 		WSACleanup();
 #else
-		// 关闭客户端 socket
-		for (const auto& client : client_vec_)
-		{
-			if (client)
-			{
-				int sock = client->GetSock();
-				close(sock);
-				delete client;
-			}
-		}
-		client_vec_.clear();
-
 		// 关闭服务端 socket
 		close(svr_sock_);
 #endif // _WIN32
@@ -148,6 +146,8 @@ bool EasyTcpServer::OnRun()
 {
 	if (IsRun())
 	{
+		Time4Pkg();
+
 		// 伯克利socket集合
 		fd_set fd_read;
 		fd_set fd_write;
@@ -164,19 +164,10 @@ bool EasyTcpServer::OnRun()
 
 		// 计算最大socket
 		SOCKET max_sock = svr_sock_;
-		for (const auto& client : client_vec_)
-		{
-			SOCKET sock = client->GetSock();
-			FD_SET(sock, &fd_read);
-			if (max_sock < sock)
-			{
-				max_sock = sock;
-			}
-		}
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
-		timeval time_val = { 0, 0 };
+		timeval time_val = { 0, 10 };
 		int ret = select(int(max_sock) + 1, &fd_read, &fd_write, &fd_exp, &time_val);
 		if (ret < 0)
 		{
@@ -192,32 +183,6 @@ bool EasyTcpServer::OnRun()
 			Accept();
 		}
 
-		std::vector<Client*> temp_vec = {};
-
-		for (const auto client : client_vec_)
-		{
-			auto temp_sock = client->GetSock();
-			if (FD_ISSET(temp_sock, &fd_read))
-			{
-				// 说明客户端退出了
-				if (RecvData(client) < 0)
-				{
-					auto iter = find(client_vec_.begin(), client_vec_.end(), client);
-					if (iter != client_vec_.end())
-					{
-						temp_vec.push_back(client);
-						client_vec_.erase(iter);
-					}
-				}
-			}
-		}
-
-		for (const auto& client : temp_vec)
-		{
-			delete client;
-		}
-		temp_vec.clear();
-
 		return true;
 	}
 
@@ -229,117 +194,32 @@ bool EasyTcpServer::IsRun()
 	return (svr_sock_ != INVALID_SOCKET);
 }
 
-int EasyTcpServer::RecvData(Client* client)
+void EasyTcpServer::Time4Pkg()
 {
-	int len = recv(client->GetSock(), data_buffer_, sizeof(DataHeader), 0);
-	if (len <= 0)
-	{
-		printf("客户端已退出，任务结束\n");
-		return -1;
-	}
-
-	// 将收到的数据拷贝到消息缓冲区
-	memcpy(client->GetDataBuffer() + client->GetLastPos(), data_buffer_, len);
-
-	// 缓冲区的数据尾部后移
-	client->SetLastPos(client->GetLastPos() + len);
-
-	// 判断消息缓冲区的数据长度是都大于消息头DataHeader的长度
-	while (client->GetLastPos() >= sizeof(DataHeader))
-	{
-		// 这时就可以知道当前消息的长度
-		DataHeader* header = (DataHeader*)client->GetDataBuffer();
-
-		// 判断消息缓冲区的数据长度是否大于一条完整消息长度
-		if (client->GetLastPos() >= header->data_len)
-		{
-			// 未处理的消息的长度
-			int size = client->GetLastPos() - header->data_len;
-
-			// 处理消息
-			OnNetMsg(client->GetSock(), header);
-
-			// 将消息缓冲区的未处理的数据前移
-			memcpy(client->GetDataBuffer(), client->GetDataBuffer() + header->data_len, size);
-
-			// 将消息缓冲区数据尾部位置前移
-			client->SetLastPos(size);
-		}
-		else
-		{
-			// 缓冲区的数据长度不足一条完整消息长度
-			break;
-		}
-	}
-
-	return 0;
-}
-
-int EasyTcpServer::OnNetMsg(SOCKET client_sock, DataHeader* header)
-{
-	recv_count_++;
 	auto time_temp = time_stamp_.GetElapsedSecond();
 	if (time_temp >= 1.0)
 	{
-		printf("时间戳 ：%lf, 收到客户端请求次数 ：%d\n", time_temp, recv_count_);
+		printf("时间戳 : %lf, svr_sock : %d, 客户端数量 : %d, 收到客户端请求次数 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp));
 		time_stamp_.Update();
 		recv_count_ = 0;
 	}
-
-	switch (header->cmd)
-	{
-	case Cmd::kCmdLogin:
-	{
-		LoginData* login_data = (LoginData*)header;
-		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
-
-		// 忽略判断账号密码逻辑
-		LoginRetData login_ret_data = {};
-		(void)SendData(&login_ret_data, client_sock);
-	}
-	break;
-
-	case Cmd::kCmdLogout:
-	{
-		LogoutData* logout_data = (LogoutData*)header;
-		//printf("收到命令，cmd : kCmdLogout, 数据长度 ：%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
-
-		// 忽略判断账号密码逻辑
-		LogoutRetData logout_ret_data = {};
-		(void)SendData(&logout_ret_data, client_sock);
-	}
-	break;
-
-	default:
-	{
-		printf("收到错误命令，cmd : %d\n", header->cmd);
-
-		DataHeader temp = {};
-		temp.cmd = Cmd::kCmdError;
-		temp.data_len = 0;
-		(void)SendData(&temp, client_sock);
-	}
-	break;
-	}
-
-	return 0;
 }
 
-int EasyTcpServer::SendData(DataHeader* data, SOCKET client_sock)
+// 线程不安全
+void EasyTcpServer::OnJoin(Client* client)
 {
-	if (IsRun() && data)
-		return send(client_sock, (const char*)data, data->data_len, 0);
-
-	return SOCKET_ERROR;
+	client_count_++;
 }
 
-void EasyTcpServer::SendData(DataHeader* data)
+// 线程不安全
+void EasyTcpServer::OnLeave(Client* client)
 {
-	if (IsRun() && data)
-	{
-		for (const auto& client : client_vec_)
-		{
-			send(client->GetSock(), (const char*)data, data->data_len, 0);
-		}
-	}
+	client_count_--;
 }
+
+// 线程不安全
+void EasyTcpServer::OnNetMsg(Client* client, DataHeader* header)
+{
+	recv_count_++;
+}
+

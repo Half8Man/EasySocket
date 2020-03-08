@@ -1,7 +1,7 @@
 ﻿#ifndef __CELL_TIME_STAMP_H__
 #define __CELL_TIME_STAMP_H__
 
-#include <chrono>
+#include "HeaderFile.h"
 
 using namespace std::chrono;
 

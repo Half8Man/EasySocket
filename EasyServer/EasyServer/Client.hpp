@@ -1,12 +1,7 @@
 #ifndef __CLIENT_H__
 #define __CLIENT_H__
 
-#ifndef _WIN32
-	typedef int SOCKET
-	#define INVALID_SOCKET (int)(~0)
-	#define SOCKET_ERROR (-1)
-#endif
-
+#include "HeaderFile.h"
 #include "CommonDef.h"
 
 class Client
@@ -40,6 +35,15 @@ public:
 	inline SOCKET GetSock() const
 	{
 		return client_sock_;
+	}
+
+	// ·¢ËÍÊý¾Ý
+	int SendData(DataHeader* data)
+	{
+		if (data)
+			return send(client_sock_, (const char*)data, data->data_len, 0);
+
+		return SOCKET_ERROR;
 	}
 
 private:

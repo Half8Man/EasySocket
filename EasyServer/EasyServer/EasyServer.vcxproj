@@ -139,14 +139,17 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CellServer.cpp" />
     <ClCompile Include="EasyTcpServer.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CellServer.h" />
     <ClInclude Include="CELLTimeStamp.hpp" />
     <ClInclude Include="Client.hpp" />
     <ClInclude Include="CommonDef.h" />
     <ClInclude Include="EasyTcpServer.h" />
+    <ClInclude Include="HeaderFile.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

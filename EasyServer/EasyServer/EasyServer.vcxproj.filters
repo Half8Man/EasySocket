@@ -21,6 +21,9 @@
     <ClCompile Include="EasyTcpServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="CellServer.cpp">
+      <Filter>头文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp">
@@ -33,6 +36,12 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CELLTimeStamp.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="HeaderFile.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CellServer.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

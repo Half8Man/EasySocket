@@ -40,7 +40,7 @@ SOCKET EasyTcpClient::InitSocket()
 		return -1;
 	}
 
-	printf("创建socket成功， socket : %d\n", int(socket));
+	//printf("创建socket成功， socket : %d\n", int(socket));
 	return 0;
 }
 
@@ -57,10 +57,10 @@ int EasyTcpClient::Connect(const char* ip, unsigned short port)
 	client_addr.sin_port = htons(port);
 
 	auto ret = connect(client_sock_, (sockaddr*)&client_addr, sizeof(sockaddr_in));
-	if (ret == SOCKET_ERROR)
-		printf("连接服务器失败\n");
-	else
-		printf("连接服务器成功\n");
+	//if (ret == SOCKET_ERROR)
+	//	printf("连接服务器失败\n");
+	//else
+	//	printf("连接服务器成功\n");
 
 	return ret;
 }
@@ -138,21 +138,21 @@ int EasyTcpClient::DealMsg(DataHeader* header)
 	case Cmd::kCmdLoginRet:
 	{
 		LoginRetData* login_ret_data = (LoginRetData*)header;
-		//printf("登录结果: %d \n", login_ret_data->ret);
+		printf("登录结果: %d \n", login_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdLogoutRet:
 	{
 		LogoutRetData* logout_ret_data = (LogoutRetData*)header;
-		//printf("登出结果: %d \n", logout_ret_data->ret);
+		printf("登出结果: %d \n", logout_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdNewUserJoin:
 	{
 		NewUserJoinData* new_user_join_data = (NewUserJoinData*)header;
-		//printf("新用户加入, socket : %d \n", new_user_join_data->sock);
+		printf("新用户加入, socket : %d \n", new_user_join_data->sock);
 	}
 	break;
 

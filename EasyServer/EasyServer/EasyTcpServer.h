@@ -1,34 +1,17 @@
 ﻿#ifndef __EASY_TCP_SERVER_H__
 #define __EASY_TCP_SERVER_H__
 
-#ifdef _WIN32
-	#define WIN32_LEAN_AND_MEAN
-	#define _WINSOCK_DEPRECATED_NO_WARNINGS
-	#define FD_SETSIZE 1024
-
-	#include<windows.h>
-	#include<WinSock2.h>
-	#pragma comment(lib,"ws2_32.lib")
-#else
-	#include<unistd.h>
-	#include<arpa/inet.h>
-	#include<string.h>
-
-	typedef int SOCKET
-	#define INVALID_SOCKET (int)(~0)
-	#define SOCKET_ERROR (-1)
-#endif
-
-#include <stdio.h>
-#include <vector>
-
+#include "HeaderFile.h"
 #include "CommonDef.h"
 #include "Client.hpp"
 #include "CELLTimeStamp.hpp"
+#include "CellServer.h"
 
 class Client;
+class CELLTimeStamp;
+class CellServer;
 
-class EasyTcpServer
+class EasyTcpServer : public INetEvent
 {
 public:
 	EasyTcpServer();
@@ -38,21 +21,24 @@ public:
 	int Bind(const char* ip, unsigned short port);
 	int Listen(int count);
 	SOCKET Accept();
+	void Start(int cell_server_count);
+	void AddClient2CellServer(Client* client);
 	void Close();
 
 	bool OnRun();
 	bool IsRun();
-	int RecvData(Client* client);
-	virtual int OnNetMsg(SOCKET client_sock, DataHeader* header);
-	virtual int SendData(DataHeader *data, SOCKET client_sock);
-	virtual void SendData(DataHeader* data);
+
+	void Time4Pkg();
+	virtual void OnJoin(Client* client);
+	virtual void OnLeave(Client* client);
+	virtual void OnNetMsg(Client* client, DataHeader* header);
 
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
-	char data_buffer_[kBufferSize] = {};
-	std::vector<Client*> client_vec_ = {};
+	std::vector<CellServer*> cell_server_vec_ = {};
+	std::atomic_int recv_count_ = 0;
+	std::atomic_int client_count_ = 0;
 	CELLTimeStamp time_stamp_;
-	int recv_count_ = 0;
 };
 
 #endif // !__EASY_TCP_SERVER_H__
