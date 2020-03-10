@@ -90,14 +90,14 @@ void SendThread(int id)
 
 	while (can_run)
 	{
-		for (int i = begin; i < end; i++)
-		{
-			clients[i]->OnRun();
-		}
+		//for (int i = begin; i < end; i++)
+		//{
+		//	clients[i]->OnRun();
+		//}
 
-		// 休眠1000毫秒
-		std::chrono::milliseconds sleep_time(1000);
-		std::this_thread::sleep_for(sleep_time);
+		//// 休眠1000毫秒
+		//std::chrono::milliseconds sleep_time(1000);
+		//std::this_thread::sleep_for(sleep_time);
 
 		for (int i = begin; i < end; i++)
 		{

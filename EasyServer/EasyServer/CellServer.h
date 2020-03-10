@@ -38,12 +38,16 @@ public:
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
 	char data_buffer_[kBufferSize] = {};
-	std::vector<Client*> client_vec_ = {};
+	std::unordered_map<SOCKET, Client*> client_map_ = {};
 	std::vector<Client*> client_buff_vec_ = {};
 
 	std::mutex client_mutex_;
 	std::thread* work_thread_ = nullptr;
 	INetEvent* inet_event_ = nullptr;
+
+	fd_set fd_read_backup_;
+	bool is_clients_change_ = false;
+	SOCKET max_sock_ = 0;
 };
 
 #endif // !__CELL_SERVER_H__

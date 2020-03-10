@@ -1,10 +1,9 @@
 #include "CellServer.h"
 
 CellServer::CellServer(SOCKET sock, INetEvent* inet_event)
+	:svr_sock_(sock), inet_event_(inet_event), work_thread_(nullptr), is_clients_change_(false), max_sock_(0)
 {
-	svr_sock_ = sock;
-	inet_event_ = inet_event;
-	work_thread_ = nullptr;
+	FD_ZERO(&fd_read_backup_);
 }
 
 CellServer::~CellServer()
@@ -23,10 +22,10 @@ void CellServer::Close()
 {
 	if (IsRun())
 	{
-#ifdef _WIN32
 		// 关闭客户端 socket
-		for (const auto& client : client_vec_)
+		for (const auto& client_pair : client_map_)
 		{
+			auto client = client_pair.second;
 			if (client)
 			{
 				SOCKET sock = client->GetSock();
@@ -34,23 +33,12 @@ void CellServer::Close()
 				delete client;
 			}
 		}
-		client_vec_.clear();
+		client_map_.clear();
 
+#ifdef _WIN32
 		// 关闭服务端 socket
 		closesocket(svr_sock_);
 #else
-		// 关闭客户端 socket
-		for (const auto& client : client_vec_)
-		{
-			if (client)
-			{
-				int sock = client->GetSock();
-				close(sock);
-				delete client;
-			}
-		}
-		client_vec_.clear();
-
 		// 关闭服务端 socket
 		close(svr_sock_);
 #endif // _WIN32
@@ -59,11 +47,12 @@ void CellServer::Close()
 
 int CellServer::GetClientCount() const
 {
-	return client_vec_.size() + client_buff_vec_.size();
+	return client_map_.size() + client_buff_vec_.size();
 }
 
 bool CellServer::OnRun()
 {
+	is_clients_change_ = true;
 	while (IsRun())
 	{
 		if (!client_buff_vec_.empty())
@@ -71,13 +60,14 @@ bool CellServer::OnRun()
 			std::lock_guard<std::mutex> lock(client_mutex_);
 			for (const auto& client : client_buff_vec_)
 			{
-				client_vec_.push_back(client);
+				client_map_[client->GetSock()] = client;
 			}
 			client_buff_vec_.clear();
+			is_clients_change_ = true;
 		}
 
 		// 如果没有需要处理的客户端，跳过
-		if (client_vec_.empty())
+		if (client_map_.empty())
 		{
 			// 休眠一毫秒
 			std::chrono::milliseconds sleep_time(1);
@@ -87,55 +77,67 @@ bool CellServer::OnRun()
 
 		// 伯克利socket集合
 		fd_set fd_read;
-		fd_set fd_write;
-		fd_set fd_exp;
 
 		// 清空集合
 		FD_ZERO(&fd_read);
-		FD_ZERO(&fd_write);
-		FD_ZERO(&fd_exp);
 
-		// 计算最大socket
-		SOCKET max_sock = client_vec_[0]->GetSock();
-		for (const auto& client : client_vec_)
+		if (is_clients_change_)
 		{
-			SOCKET sock = client->GetSock();
-			FD_SET(sock, &fd_read);
-			if (max_sock < sock)
+			is_clients_change_ = false;
+
+			// 计算最大socket
+			max_sock_ = client_map_.begin()->second->GetSock();
+			for (const auto& client_pair : client_map_)
 			{
-				max_sock = sock;
+				auto client = client_pair.second;
+				SOCKET sock = client->GetSock();
+				FD_SET(sock, &fd_read);
+				if (max_sock_ < sock)
+				{
+					max_sock_ = sock;
+				}
 			}
+			memcpy(&fd_read_backup_, &fd_read, sizeof(fd_set));
+		}
+		else
+		{
+			memcpy(&fd_read, &fd_read_backup_, sizeof(fd_set));
 		}
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
 		timeval time_val = { 0, 0 };
-		int ret = select(int(max_sock) + 1, &fd_read, &fd_write, &fd_exp, nullptr );
+		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, &time_val);
 		if (ret < 0)
 		{
 			printf("select < 0, 任务结束\n");
 			Close();
 			return false;
 		}
+		else if(ret == 0)
+		{
+			continue;
+		}
 
 		std::vector<Client*> client_vec_temp = {};
 
-		for (const auto& client : client_vec_)
+		for (int i = 0; i < fd_read.fd_count; i++)
 		{
-			auto temp_sock = client->GetSock();
-			if (FD_ISSET(temp_sock, &fd_read))
+			auto iter = client_map_.find(fd_read.fd_array[i]);
+			if (iter != client_map_.end())
 			{
+				auto client = iter->second;
 				// 说明客户端退出了
 				if (RecvData(client) < 0)
 				{
-					auto iter = std::find(client_vec_.begin(), client_vec_.end(), client);
-					if (iter != client_vec_.end())
-					{
-						client_vec_temp.push_back(client);
-						inet_event_->OnLeave(client);
-						client_vec_.erase(iter);
-					}
+					is_clients_change_ = true;
+					client_vec_temp.push_back(client);
+					inet_event_->OnLeave(client);
 				}
+			}
+			else
+			{
+				printf("error. if (iter != _clients.end())\n");
 			}
 		}
 
@@ -143,6 +145,7 @@ bool CellServer::OnRun()
 		{
 			if (client)
 			{
+				client_map_.erase(client->GetSock());
 				delete client;
 			}
 		}
@@ -211,12 +214,12 @@ int CellServer::OnNetMsg(Client* client, DataHeader* header)
 	{
 	case Cmd::kCmdLogin:
 	{
-		LoginData* login_data = (LoginData*)header;
-		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+		//LoginData* login_data = (LoginData*)header;
+		////printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
-		// 忽略判断账号密码逻辑
-		LoginRetData login_ret_data = {};
-		(void)client->SendData(&login_ret_data);
+		//// 忽略判断账号密码逻辑
+		//LoginRetData login_ret_data = {};
+		//(void)client->SendData(&login_ret_data);
 	}
 	break;
 
@@ -258,8 +261,9 @@ void CellServer::SendData(DataHeader* data)
 {
 	if (IsRun() && data)
 	{
-		for (const auto& client : client_vec_)
+		for (const auto& client_pair : client_map_)
 		{
+			auto client = client_pair.second;
 			send(client->GetSock(), (const char*)data, data->data_len, 0);
 		}
 	}
