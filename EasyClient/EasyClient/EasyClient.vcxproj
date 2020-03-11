@@ -143,6 +143,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CELLTimeStamp.hpp" />
     <ClInclude Include="CommonDef.h" />
     <ClInclude Include="EasyTcpClient.h" />
   </ItemGroup>

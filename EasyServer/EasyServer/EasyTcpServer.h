@@ -32,10 +32,12 @@ public:
 	virtual void OnJoin(Client* client);
 	virtual void OnLeave(Client* client);
 	virtual void OnNetMsg(Client* client, DataHeader* header);
+	virtual void OnNetRecv(Client* client);
 
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
 	std::vector<CellServer*> cell_server_vec_ = {};
+	std::atomic_int msg_count_ = 0;
 	std::atomic_int recv_count_ = 0;
 	std::atomic_int client_count_ = 0;
 	CELLTimeStamp time_stamp_;

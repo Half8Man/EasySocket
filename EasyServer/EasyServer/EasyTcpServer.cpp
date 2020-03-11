@@ -1,7 +1,7 @@
 ﻿#include "EasyTcpServer.h"
 
 EasyTcpServer::EasyTcpServer()
-	:svr_sock_(INVALID_SOCKET), recv_count_(0), client_count_(0)
+	:svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
 {
 	cell_server_vec_ = {};
 }
@@ -34,7 +34,9 @@ SOCKET EasyTcpServer::InitSock()
 		Close();
 	}
 	else
+	{
 		printf("建立socket成功\n");
+	}
 
 	return svr_sock_;
 }
@@ -47,16 +49,24 @@ int EasyTcpServer::Bind(const char* ip, unsigned short port)
 	sock_addr.sin_port = htons(port);
 
 	if (ip)
+	{
 		sock_addr.sin_addr.s_addr = inet_addr(ip);
+	}
 	else
+	{
 		sock_addr.sin_addr.s_addr = INADDR_ANY;
+	}
 
 	int ret = bind(svr_sock_, (sockaddr*)&sock_addr, sizeof(sock_addr));
 
 	if (ret == SOCKET_ERROR)
+	{
 		printf("绑定端口 <%d> 失败\n", ret);
+	}
 	else
+	{
 		printf("绑定端口 <%d> 成功\n", ret);
+	}
 
 	return ret;
 }
@@ -66,9 +76,13 @@ int EasyTcpServer::Listen(int count = 16)
 	int ret = listen(svr_sock_, count);
 
 	if (ret == SOCKET_ERROR)
+	{
 		printf("监听网络端口失败\n");
+	}
 	else
+	{
 		printf("监听网络端口成功\n");
+	}
 
 	return ret;
 }
@@ -89,7 +103,9 @@ SOCKET EasyTcpServer::Accept()
 #endif // _WIN32
 
 	if (client_sock == INVALID_SOCKET)
+	{
 		printf("接受无效客户端socket\n");
+	}
 	else
 	{
 		//printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
@@ -199,9 +215,10 @@ void EasyTcpServer::Time4Pkg()
 	auto time_temp = time_stamp_.GetElapsedSecond();
 	if (time_temp >= 1.0)
 	{
-		printf("时间戳 : %lf, svr_sock : %d, 客户端数量 : %d, 收到客户端请求次数 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp));
+		printf("时间 : %lf, svr_sock : %d, 客户端数量 : %d, recv次数 : %d, msg数量 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp), int(msg_count_ / time_temp));
 		time_stamp_.Update();
 		recv_count_ = 0;
+		msg_count_ = 0;
 	}
 }
 
@@ -220,6 +237,12 @@ void EasyTcpServer::OnLeave(Client* client)
 // 线程不安全
 void EasyTcpServer::OnNetMsg(Client* client, DataHeader* header)
 {
+	msg_count_++;
+}
+
+void EasyTcpServer::OnNetRecv(Client* client)
+{
 	recv_count_++;
 }
+
 

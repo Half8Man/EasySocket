@@ -121,7 +121,7 @@ bool CellServer::OnRun()
 
 		std::vector<Client*> client_vec_temp = {};
 
-		for (int i = 0; i < fd_read.fd_count; i++)
+		for (int i = 0; i < int(fd_read.fd_count); i++)
 		{
 			auto iter = client_map_.find(fd_read.fd_array[i]);
 			if (iter != client_map_.end())
@@ -162,7 +162,8 @@ bool CellServer::IsRun()
 
 int CellServer::RecvData(Client* client)
 {
-	int len = recv(client->GetSock(), data_buffer_, sizeof(DataHeader), 0);
+	int len = recv(client->GetSock(), recv_data_buffer_, kRecvBufferSize, 0);
+	inet_event_->OnNetRecv(client);
 	if (len <= 0)
 	{
 		printf("客户端已退出，任务结束\n");
@@ -170,31 +171,31 @@ int CellServer::RecvData(Client* client)
 	}
 
 	// 将收到的数据拷贝到消息缓冲区
-	memcpy(client->GetDataBuffer() + client->GetLastPos(), data_buffer_, len);
+	memcpy(client->GetRecvDataBuffer() + client->GetRecvLastPos(), recv_data_buffer_, len);
 
 	// 缓冲区的数据尾部后移
-	client->SetLastPos(client->GetLastPos() + len);
+	client->SetRecvLastPos(client->GetRecvLastPos() + len);
 
 	// 判断消息缓冲区的数据长度是都大于消息头DataHeader的长度
-	while (client->GetLastPos() >= sizeof(DataHeader))
+	while (client->GetRecvLastPos() >= sizeof(DataHeader))
 	{
 		// 这时就可以知道当前消息的长度
-		DataHeader* header = (DataHeader*)client->GetDataBuffer();
+		DataHeader* header = (DataHeader*)client->GetRecvDataBuffer();
 
 		// 判断消息缓冲区的数据长度是否大于一条完整消息长度
-		if (client->GetLastPos() >= header->data_len)
+		if (client->GetRecvLastPos() >= header->data_len)
 		{
 			// 未处理的消息的长度
-			int size = client->GetLastPos() - header->data_len;
+			int size = client->GetRecvLastPos() - header->data_len;
 
 			// 处理消息
 			OnNetMsg(client, header);
 
 			// 将消息缓冲区的未处理的数据前移
-			memcpy(client->GetDataBuffer(), client->GetDataBuffer() + header->data_len, size);
+			memcpy(client->GetRecvDataBuffer(), client->GetRecvDataBuffer() + header->data_len, size);
 
 			// 将消息缓冲区数据尾部位置前移
-			client->SetLastPos(size);
+			client->SetRecvLastPos(size);
 		}
 		else
 		{
@@ -214,12 +215,12 @@ int CellServer::OnNetMsg(Client* client, DataHeader* header)
 	{
 	case Cmd::kCmdLogin:
 	{
-		//LoginData* login_data = (LoginData*)header;
-		////printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+		LoginData* login_data = (LoginData*)header;
+		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
-		//// 忽略判断账号密码逻辑
-		//LoginRetData login_ret_data = {};
-		//(void)client->SendData(&login_ret_data);
+		// 忽略判断账号密码逻辑
+		LoginRetData login_ret_data = {};
+		(void)client->SendData(&login_ret_data);
 	}
 	break;
 
@@ -252,7 +253,9 @@ int CellServer::OnNetMsg(Client* client, DataHeader* header)
 int CellServer::SendData(DataHeader* data, SOCKET client_sock)
 {
 	if (IsRun() && data)
+	{
 		return send(client_sock, (const char*)data, data->data_len, 0);
+	}
 
 	return SOCKET_ERROR;
 }

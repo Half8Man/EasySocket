@@ -2,7 +2,7 @@
 #define __COMMON_DEF_H__
 
 // 数据缓冲区最小单元大小
-const int kBufferSize = 10240;
+const int kBufferSize = 10240 * 5;
 
 enum Cmd
 {

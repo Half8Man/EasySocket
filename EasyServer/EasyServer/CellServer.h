@@ -12,6 +12,7 @@ public:
 	virtual void OnJoin(Client* client) = 0;
 	virtual void OnLeave(Client* client) = 0;
 	virtual void OnNetMsg(Client* client, DataHeader* header) = 0;
+	virtual void OnNetRecv(Client* client) = 0;
 private:
 };
 
@@ -37,7 +38,7 @@ public:
 
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
-	char data_buffer_[kBufferSize] = {};
+	char recv_data_buffer_[kRecvBufferSize] = {};
 	std::unordered_map<SOCKET, Client*> client_map_ = {};
 	std::vector<Client*> client_buff_vec_ = {};
 

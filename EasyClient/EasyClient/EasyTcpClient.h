@@ -58,7 +58,7 @@ private:
 	SOCKET client_sock_;
 
 	// Êý¾Ý»º³åÇø
-	char first_data_buffer_[kBufferSize] = {};
+	//char first_data_buffer_[kBufferSize] = {};
 	char second_data_buffer_[kBufferSize * 10] = {};
 
 	int last_pos = 0;

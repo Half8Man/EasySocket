@@ -3,7 +3,7 @@
 EasyTcpClient::EasyTcpClient()
 	:client_sock_(INVALID_SOCKET), last_pos(0)
 {
-	memset(first_data_buffer_, 0, sizeof(first_data_buffer_));
+	//memset(first_data_buffer_, 0, sizeof(first_data_buffer_));
 	memset(second_data_buffer_, 0, sizeof(second_data_buffer_));
 }
 
@@ -89,15 +89,16 @@ int EasyTcpClient::SendData(DataHeader* data)
 
 int EasyTcpClient::OnRecvData()
 {
-	int len = recv(client_sock_, first_data_buffer_, kBufferSize, 0);
+	char* first_data_buffer_ = second_data_buffer_ + last_pos;
+	int len = recv(client_sock_, first_data_buffer_, kBufferSize - last_pos, 0);
 	if (len <= 0)
 	{
 		printf("与服务端连接断开，任务结束\n");
 		return -1;
 	}
 
-	// 将第一缓冲区的数据拷贝到第二缓冲区
-	memcpy(second_data_buffer_ + last_pos, first_data_buffer_, len);
+	//// 将第一缓冲区的数据拷贝到第二缓冲区
+	//memcpy(second_data_buffer_ + last_pos, first_data_buffer_, len);
 
 	// 第二消息缓冲区数据尾部位置后移
 	last_pos += len;
@@ -118,7 +119,8 @@ int EasyTcpClient::OnRecvData()
 			DealMsg(header);
 
 			// 未处理数据前移
-			memcpy(second_data_buffer_, first_data_buffer_ + header->data_len, len);
+			int a = sizeof(header);
+			memcpy(second_data_buffer_, second_data_buffer_ + header->data_len, len);
 			last_pos = len;
 		}
 		else

@@ -8,28 +8,44 @@ class Client
 {
 public:
 	Client(SOCKET sock)
-		:client_sock_(sock), last_pos_(0)
+		:client_sock_(sock), recv_last_pos_(0), send_last_pos_(0)
 	{
-		memset(data_buffer_, 0, sizeof(data_buffer_));
+		memset(recv_data_buffer_, 0, sizeof(recv_data_buffer_));
+		memset(send_data_buffer_, 0, sizeof(send_data_buffer_));
 	}
 
 	virtual ~Client()
 	{
 	}
 
-	inline char* GetDataBuffer()
+	inline char* GetRecvDataBuffer()
 	{
-		return data_buffer_;
+		return recv_data_buffer_;
 	}
 
-	inline void SetLastPos(int pos)
+	inline char* GetSendDataBuffer()
 	{
-		last_pos_ = pos;
+		return send_data_buffer_;
 	}
 
-	inline int GetLastPos() const
+	inline void SetRecvLastPos(int pos)
 	{
-		return last_pos_;
+		recv_last_pos_ = pos;
+	}
+
+	inline int GetRecvLastPos() const
+	{
+		return recv_last_pos_;
+	}
+
+	inline void SetSendLastPos(int pos)
+	{
+		send_last_pos_ = pos;
+	}
+
+	inline int GetSendLastPos() const
+	{
+		return send_last_pos_;
 	}
 
 	inline SOCKET GetSock() const
@@ -37,21 +53,75 @@ public:
 		return client_sock_;
 	}
 
-	// 发送数据
+	// 定时定量发送数据
 	int SendData(DataHeader* data)
 	{
-		if (data)
-			return send(client_sock_, (const char*)data, data->data_len, 0);
+		int ret = SOCKET_ERROR;
 
-		return SOCKET_ERROR;
+		if (data)
+		{
+			// 要发送的数据长度
+			int send_data_len = data->data_len;
+			// 要发送的数据
+			const char* send_data = (const char*)data;
+
+			while (true)
+			{
+				if (send_last_pos_ + send_data_len >= kSendBufferSize)
+				{
+					// 计算可以拷贝的数据长度
+					int copy_len = kSendBufferSize - send_last_pos_;
+
+					// 拷贝数据
+					memcpy(send_data_buffer_ + send_last_pos_, send_data, copy_len);
+
+					// 计算剩余数据位置
+					send_data += copy_len;
+
+					// 计算剩余数据长度
+					send_data_len -= copy_len;
+
+					// 发送数据
+					ret = send(client_sock_, send_data_buffer_, kSendBufferSize, 0);
+
+					// 数据尾部位置置零
+					send_last_pos_ = 0;
+
+					if (ret == SOCKET_ERROR)
+					{
+						return ret;
+					}
+				}
+				else
+				{
+					// 拷贝数据到发送缓冲区尾部
+					memcpy(send_data_buffer_ + send_last_pos_, send_data, send_data_len);
+
+					// 数据尾部位置偏移
+					send_last_pos_ += send_data_len;
+
+					break;
+				}
+			}
+		}
+
+		return ret;
 	}
 
 private:
 	SOCKET client_sock_ = INVALID_SOCKET;
 
-	char data_buffer_[kBufferSize * 10] = {};
+	// 接收缓冲区
+	char recv_data_buffer_[kRecvBufferSize] = {};
 
-	int last_pos_ = 0;
+	// 发送缓冲区
+	char send_data_buffer_[kSendBufferSize] = {};
+
+	// 接收缓冲区的数据尾部位置
+	int recv_last_pos_ = 0;
+
+	// 发送缓冲区的数据尾部位置
+	int send_last_pos_ = 0;
 };
 
 #endif // !__CLIENT_H__
