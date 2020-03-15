@@ -31,7 +31,7 @@ public:
 	void Time4Pkg();
 	virtual void OnJoin(Client* client);
 	virtual void OnLeave(Client* client);
-	virtual void OnNetMsg(Client* client, DataHeader* header);
+	virtual void OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header);
 	virtual void OnNetRecv(Client* client);
 
 private:

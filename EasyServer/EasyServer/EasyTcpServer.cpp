@@ -235,7 +235,7 @@ void EasyTcpServer::OnLeave(Client* client)
 }
 
 // 线程不安全
-void EasyTcpServer::OnNetMsg(Client* client, DataHeader* header)
+void EasyTcpServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
 {
 	msg_count_++;
 }

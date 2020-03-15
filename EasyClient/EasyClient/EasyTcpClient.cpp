@@ -89,8 +89,8 @@ int EasyTcpClient::SendData(DataHeader* data)
 
 int EasyTcpClient::OnRecvData()
 {
-	char* first_data_buffer_ = second_data_buffer_ + last_pos;
-	int len = recv(client_sock_, first_data_buffer_, kBufferSize - last_pos, 0);
+	char* first_data_buffer = second_data_buffer_ + last_pos;
+	int len = recv(client_sock_, first_data_buffer, kBufferSize - last_pos, 0);
 	if (len <= 0)
 	{
 		printf("与服务端连接断开，任务结束\n");
@@ -119,7 +119,6 @@ int EasyTcpClient::OnRecvData()
 			DealMsg(header);
 
 			// 未处理数据前移
-			int a = sizeof(header);
 			memcpy(second_data_buffer_, second_data_buffer_ + header->data_len, len);
 			last_pos = len;
 		}

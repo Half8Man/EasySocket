@@ -1,14 +1,29 @@
 #include "CellServer.h"
 
 CellServer::CellServer(SOCKET sock, INetEvent* inet_event)
-	:svr_sock_(sock), inet_event_(inet_event), work_thread_(nullptr), is_clients_change_(false), max_sock_(0)
+	:svr_sock_(sock),
+	inet_event_(inet_event),
+	work_thread_(nullptr),
+	is_clients_change_(false),
+	max_sock_(0),
+	cell_task_svr_(nullptr)
 {
 	FD_ZERO(&fd_read_backup_);
 }
 
 CellServer::~CellServer()
 {
-	delete work_thread_;
+	if (work_thread_)
+	{
+		delete work_thread_;
+		work_thread_ = nullptr;
+	}
+	if (cell_task_svr_)
+	{
+		delete cell_task_svr_;
+		cell_task_svr_ = nullptr;
+	}
+
 	Close();
 	svr_sock_ = INVALID_SOCKET;
 }
@@ -16,6 +31,12 @@ CellServer::~CellServer()
 void CellServer::Start()
 {
 	work_thread_ = new std::thread(std::mem_fn(&CellServer::OnRun), this);
+
+	cell_task_svr_ = new CellTaskServer();
+	if (cell_task_svr_)
+	{
+		cell_task_svr_->Start();
+	}
 }
 
 void CellServer::Close()
@@ -107,7 +128,7 @@ bool CellServer::OnRun()
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
 		timeval time_val = { 0, 0 };
-		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, &time_val);
+		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, nullptr);
 		if (ret < 0)
 		{
 			printf("select < 0, 任务结束\n");
@@ -162,7 +183,8 @@ bool CellServer::IsRun()
 
 int CellServer::RecvData(Client* client)
 {
-	int len = recv(client->GetSock(), recv_data_buffer_, kRecvBufferSize, 0);
+	char* recv_data_buffer = client->GetRecvDataBuffer() + client->GetRecvLastPos();
+	int len = recv(client->GetSock(), recv_data_buffer, kRecvBufferSize - client->GetRecvLastPos(), 0);
 	inet_event_->OnNetRecv(client);
 	if (len <= 0)
 	{
@@ -171,7 +193,7 @@ int CellServer::RecvData(Client* client)
 	}
 
 	// 将收到的数据拷贝到消息缓冲区
-	memcpy(client->GetRecvDataBuffer() + client->GetRecvLastPos(), recv_data_buffer_, len);
+	//memcpy(client->GetRecvDataBuffer() + client->GetRecvLastPos(), recv_data_buffer, len);
 
 	// 缓冲区的数据尾部后移
 	client->SetRecvLastPos(client->GetRecvLastPos() + len);
@@ -189,7 +211,7 @@ int CellServer::RecvData(Client* client)
 			int size = client->GetRecvLastPos() - header->data_len;
 
 			// 处理消息
-			OnNetMsg(client, header);
+			OnNetMsg(this, client, header);
 
 			// 将消息缓冲区的未处理的数据前移
 			memcpy(client->GetRecvDataBuffer(), client->GetRecvDataBuffer() + header->data_len, size);
@@ -207,9 +229,9 @@ int CellServer::RecvData(Client* client)
 	return 0;
 }
 
-int CellServer::OnNetMsg(Client* client, DataHeader* header)
+int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
 {
-	inet_event_->OnNetMsg(client, header);
+	inet_event_->OnNetMsg(this, client, header);
 
 	switch (header->cmd)
 	{
@@ -219,8 +241,11 @@ int CellServer::OnNetMsg(Client* client, DataHeader* header)
 		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
 		// 忽略判断账号密码逻辑
-		LoginRetData login_ret_data = {};
-		(void)client->SendData(&login_ret_data);
+		//LoginRetData login_ret_data = {};
+		//(void)client->SendData(&login_ret_data);
+
+		LoginRetData* login_ret_data = new LoginRetData();
+		cell_svr->AddSendTask(client, login_ret_data);
 	}
 	break;
 
@@ -281,4 +306,30 @@ void CellServer::AddClient(Client* client)
 	}
 
 	inet_event_->OnJoin(client);
+}
+
+void CellServer::AddSendTask(Client* client, DataHeader* data)
+{
+	CellSendMsg2ClientTask* task = new CellSendMsg2ClientTask(client, data);
+	cell_task_svr_->AddTask(task);
+}
+
+CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client* client, DataHeader* data)
+{
+	client_ = client;
+	data_ = data;
+}
+
+CellSendMsg2ClientTask::~CellSendMsg2ClientTask()
+{
+}
+
+void CellSendMsg2ClientTask::DoTask()
+{
+	if (data_)
+	{
+		client_->SendData(data_);
+		delete data_;
+		data_ = nullptr;
+	}
 }

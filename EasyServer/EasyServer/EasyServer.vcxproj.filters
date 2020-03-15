@@ -24,6 +24,9 @@
     <ClCompile Include="CellServer.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="CellTask.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Client.hpp">
@@ -42,6 +45,9 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="CellServer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="CellTask.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

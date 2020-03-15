@@ -5,10 +5,10 @@
 #include "EasyTcpClient.h"
 
 const std::string kIp = "127.0.0.1";
-const int kPort = 1234;
+const int kPort = 2234;
 
-const int client_count = 1;
-const int thread_count = 1;
+const int client_count = 1000;
+const int thread_count = 4;
 
 bool can_run = true;
 
@@ -103,10 +103,10 @@ void SendThread(int id)
 
 	while (can_run)
 	{
-		for (int i = begin; i < end; i++)
-		{
-			clients[i]->OnRun();
-		}
+		//for (int i = begin; i < end; i++)
+		//{
+		//	clients[i]->OnRun();
+		//}
 
 		//// 休眠1000毫秒
 		//std::chrono::milliseconds sleep_time(1);
