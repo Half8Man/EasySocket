@@ -22,21 +22,21 @@ public:
 	int Listen(int count);
 	SOCKET Accept();
 	void Start(int cell_server_count);
-	void AddClient2CellServer(Client* client);
+	void AddClient2CellServer(std::shared_ptr<Client> client);
 	void Close();
 
 	bool OnRun();
 	bool IsRun();
 
 	void Time4Pkg();
-	virtual void OnJoin(Client* client);
-	virtual void OnLeave(Client* client);
-	virtual void OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header);
-	virtual void OnNetRecv(Client* client);
+	virtual void OnJoin(std::shared_ptr<Client>& client);
+	virtual void OnLeave(std::shared_ptr<Client>& client);
+	virtual void OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client>& client, DataHeader* header);
+	virtual void OnNetRecv(std::shared_ptr<Client>& client);
 
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
-	std::vector<CellServer*> cell_server_vec_ = {};
+	std::vector<std::shared_ptr<CellServer>> cell_server_vec_ = {};
 	std::atomic_int msg_count_ = 0;
 	std::atomic_int recv_count_ = 0;
 	std::atomic_int client_count_ = 0;

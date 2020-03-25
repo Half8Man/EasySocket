@@ -12,23 +12,23 @@ class INetEvent
 {
 public:
 	// 纯虚函数
-	virtual void OnJoin(Client* client) = 0;
-	virtual void OnLeave(Client* client) = 0;
-	virtual void OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header) = 0;
-	virtual void OnNetRecv(Client* client) = 0;
+	virtual void OnJoin(std::shared_ptr<Client>& client) = 0;
+	virtual void OnLeave(std::shared_ptr<Client>& client) = 0;
+	virtual void OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client>& client, DataHeader* header) = 0;
+	virtual void OnNetRecv(std::shared_ptr<Client>& client) = 0;
 private:
 };
 
 class CellSendMsg2ClientTask :public CellTask
 {
 public:
-	CellSendMsg2ClientTask(Client* client, DataHeader* data);
+	CellSendMsg2ClientTask(std::shared_ptr<Client> client, DataHeader* data);
 	~CellSendMsg2ClientTask();
 
 	// 执行任务
 	void DoTask();
 private:
-	Client* client_;
+	std::shared_ptr<Client> client_;
 	DataHeader* data_;
 };
 
@@ -46,18 +46,18 @@ public:
 
 	bool OnRun();
 	bool IsRun();
-	int RecvData(Client* client);
-	virtual int OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header);
+	int RecvData(std::shared_ptr<Client> client);
+	virtual int OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client> client, DataHeader* header);
 	virtual int SendData(DataHeader* data, SOCKET client_sock);
 	virtual void SendData(DataHeader* data);
-	void AddClient(Client* client);
+	void AddClient(std::shared_ptr<Client> client);
 
-	void AddSendTask(Client* client, DataHeader* data);
+	void AddSendTask(std::shared_ptr<Client> client, DataHeader* data);
 
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;	// socket
-	std::unordered_map<SOCKET, Client*> client_map_ = {}; // 正式客户端map
-	std::vector<Client*> client_buff_vec_ = {}; // 缓冲客户端vector
+	std::unordered_map<SOCKET, std::shared_ptr<Client>> client_map_ = {}; // 正式客户端map
+	std::vector<std::shared_ptr<Client>> client_buff_vec_ = {}; // 缓冲客户端vector
 
 	std::mutex client_mutex_; // 缓冲队列的锁
 	std::thread* work_thread_ = nullptr; // 工作线程
