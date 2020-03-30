@@ -1,7 +1,19 @@
 #ifndef __MEMORY_MGR_HPP__
 #define __MEMORY_MGR_HPP__
 
-#include "HeaderFile.h"
+#include <mutex>
+
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#ifdef _DEBUG
+	#include <stdio.h>
+	#define xprintf(...) printf(__VA_ARGS__)
+	//#define xprintf(...)
+#else
+	#define xprintf(...)
+#endif
 
 const int kMaxMemorySize = 1024;
 
