@@ -35,7 +35,11 @@
 EasyServer/.vs/
 EasyServer/Debug/
 EasyServer/EasyServer/Debug/
+EasyServer/Release/
+EasyServer/EasyServer/Release/
 
 EasyClient/.vs/
 EasyClient/Debug/
 EasyClient/EasyClient/Debug/
+EasyClient/Release/
+EasyClient/EasyClient/Release/
