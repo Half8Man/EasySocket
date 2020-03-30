@@ -110,7 +110,7 @@ SOCKET EasyTcpServer::Accept()
 	else
 	{
 		//printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-		AddClient2CellServer(std::make_shared<Client>(client_sock));
+		AddClient2CellServer(new Client(client_sock));
 	}
 	return client_sock;
 }
@@ -119,13 +119,13 @@ void EasyTcpServer::Start(int cell_server_count)
 {
 	for (int i = 0; i < cell_server_count; i++)
 	{
-		auto cell_server = std::make_shared<CellServer>(svr_sock_, this);
+		CellServer* cell_server = new CellServer(svr_sock_, this);
 		cell_server_vec_.push_back(cell_server);
 		cell_server->Start();
 	}
 }
 
-void EasyTcpServer::AddClient2CellServer(std::shared_ptr<Client> client)
+void EasyTcpServer::AddClient2CellServer(Client* client)
 {
 	if (client)
 	{
@@ -224,24 +224,24 @@ void EasyTcpServer::Time4Pkg()
 }
 
 // 线程不安全
-void EasyTcpServer::OnJoin(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnJoin(Client* client)
 {
 	client_count_++;
 }
 
 // 线程不安全
-void EasyTcpServer::OnLeave(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnLeave(Client* client)
 {
 	client_count_--;
 }
 
 // 线程不安全
-void EasyTcpServer::OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client>& client, DataHeader* header)
+void EasyTcpServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
 {
 	msg_count_++;
 }
 
-void EasyTcpServer::OnNetRecv(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnNetRecv(Client* client)
 {
 	recv_count_++;
 }

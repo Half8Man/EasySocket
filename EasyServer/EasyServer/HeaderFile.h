@@ -28,7 +28,6 @@
 #include <mutex>
 #include <functional>
 #include <atomic>
-#include <memory>
 
 // c
 #include <stdio.h>

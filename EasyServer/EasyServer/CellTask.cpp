@@ -30,7 +30,7 @@ CellTaskServer::~CellTaskServer()
 	}
 }
 
-void CellTaskServer::AddTask(std::shared_ptr<CellTask>& cell_task)
+void CellTaskServer::AddTask(CellTask* cell_task)
 {
 	std::lock_guard<std::mutex> lock(task_mutex_);
 
@@ -72,6 +72,7 @@ void CellTaskServer::OnRun()
 		{
 			cell_task->DoTask();
 
+			delete cell_task;
 		}
 
 		// гЕ©ухннЯ

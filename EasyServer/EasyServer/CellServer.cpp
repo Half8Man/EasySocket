@@ -51,6 +51,7 @@ void CellServer::Close()
 			{
 				SOCKET sock = client->GetSock();
 				closesocket(sock);
+				delete client;
 			}
 		}
 		client_map_.clear();
@@ -139,7 +140,7 @@ bool CellServer::OnRun()
 			continue;
 		}
 
-		std::vector<std::shared_ptr<Client>> client_vec_temp = {};
+		std::vector<Client*> client_vec_temp = {};
 
 		for (int i = 0; i < int(fd_read.fd_count); i++)
 		{
@@ -161,11 +162,12 @@ bool CellServer::OnRun()
 			}
 		}
 
-		for (const auto& client : client_vec_temp)
+		for (const auto* client : client_vec_temp)
 		{
 			if (client)
 			{
 				client_map_.erase(client->GetSock());
+				delete client;
 			}
 		}
 		client_vec_temp.clear();
@@ -179,7 +181,7 @@ bool CellServer::IsRun()
 	return (svr_sock_ != INVALID_SOCKET);
 }
 
-int CellServer::RecvData(std::shared_ptr<Client> client)
+int CellServer::RecvData(Client* client)
 {
 	char* recv_data_buffer = client->GetRecvDataBuffer() + client->GetRecvLastPos();
 	int len = recv(client->GetSock(), recv_data_buffer, kRecvBufferSize - client->GetRecvLastPos(), 0);
@@ -227,7 +229,7 @@ int CellServer::RecvData(std::shared_ptr<Client> client)
 	return 0;
 }
 
-int CellServer::OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client> client, DataHeader* header)
+int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
 {
 	inet_event_->OnNetMsg(this, client, header);
 
@@ -295,7 +297,7 @@ void CellServer::SendData(DataHeader* data)
 	}
 }
 
-void CellServer::AddClient(std::shared_ptr<Client> client)
+void CellServer::AddClient(Client* client)
 {
 	if (client)
 	{
@@ -306,13 +308,13 @@ void CellServer::AddClient(std::shared_ptr<Client> client)
 	inet_event_->OnJoin(client);
 }
 
-void CellServer::AddSendTask(std::shared_ptr<Client> client, DataHeader* data)
+void CellServer::AddSendTask(Client* client, DataHeader* data)
 {
-	auto task = std::make_shared<CellSendMsg2ClientTask>(client, data);
-	cell_task_svr_->AddTask((std::shared_ptr<CellTask>&)task);
+	CellSendMsg2ClientTask* task = new CellSendMsg2ClientTask(client, data);
+	cell_task_svr_->AddTask(task);
 }
 
-CellSendMsg2ClientTask::CellSendMsg2ClientTask(std::shared_ptr<Client> client, DataHeader* data)
+CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client* client, DataHeader* data)
 {
 	client_ = client;
 	data_ = data;
