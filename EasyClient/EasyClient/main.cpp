@@ -7,7 +7,7 @@
 const std::string kIp = "127.0.0.1";
 const int kPort = 2234;
 
-const int client_count = 100;
+const int client_count = 1000;
 const int thread_count = 4;
 
 bool can_run = true;
@@ -129,6 +129,25 @@ void SendThread(int id)
 
 int main()
 {
+	//EasyTcpClient client;
+	//client.InitSocket();
+	//client.Connect(kIp.c_str(), kPort);
+
+	//std::thread input_thread(DealInput, &client);
+	//input_thread.detach();
+
+	//while (client.IsRun() && can_run)
+	//{
+	//	if (client.OnRun() < 0)
+	//	{
+	//		break;
+	//	}
+	//}
+
+	//system("pause");
+
+	//client.Close();
+
 	// 启动输入线程
 	std::thread input_thread(DealInput);
 	input_thread.detach();
@@ -144,7 +163,15 @@ int main()
 
 	while (can_run)
 	{
+		//auto time = time_stamp.GetElapsedSecond();
+		//if (time >= 1.0)
+		//{
+		//	printf("thread<%d>, clients<%d>, time<%f>, send_count<%d>\n", thread_count, client_count, time, send_count.load());
+		//	send_count = 0;
+		//	time_stamp.Update();
+		//}
 
+		//Sleep(1);
 	}
 
 	system("pause");

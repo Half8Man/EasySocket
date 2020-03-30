@@ -1,5 +1,4 @@
 ﻿#include "EasyTcpServer.h"
-#include "Alloctor.h"
 
 EasyTcpServer::EasyTcpServer()
 	:svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
