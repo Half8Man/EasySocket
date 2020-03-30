@@ -7,7 +7,7 @@
 const std::string kIp = "127.0.0.1";
 const int kPort = 2234;
 
-const int client_count = 1000;
+const int client_count = 100;
 const int thread_count = 4;
 
 bool can_run = true;

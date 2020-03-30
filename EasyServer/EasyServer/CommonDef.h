@@ -2,10 +2,10 @@
 #define __COMMON_DEF_H__
 
 // 接受数据缓冲区最小单元大小
-const int kRecvBufferSize = 10240 * 10;
+const int kRecvBufferSize = 10240;
 
 // 发送数据缓冲区最小单元大小
-const int kSendBufferSize = 10240 * 10;
+const int kSendBufferSize = 10240;
 
 // cell server 数量
 const int kCellServerCount = 4;
