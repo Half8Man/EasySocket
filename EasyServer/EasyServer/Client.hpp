@@ -3,8 +3,11 @@
 
 #include "HeaderFile.h"
 #include "CommonDef.h"
+#include "CellObjectPool.hpp"
 
-class Client
+class Client;
+
+class Client : public BaseObjectPool<Client, 1000>
 {
 public:
 	Client(SOCKET sock)

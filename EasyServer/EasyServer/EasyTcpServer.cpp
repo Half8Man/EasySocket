@@ -110,7 +110,9 @@ SOCKET EasyTcpServer::Accept()
 	else
 	{
 		//printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-		AddClient2CellServer(std::make_shared<Client>(client_sock));
+		std::shared_ptr<Client> client(new Client(client_sock));
+		AddClient2CellServer(client);
+		//AddClient2CellServer(std::make_shared<Client>(client_sock));
 	}
 	return client_sock;
 }

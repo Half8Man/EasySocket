@@ -32,6 +32,16 @@
 
 // c
 #include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <assert.h>
+
+#ifdef _DEBUG
+	//#define xprintf(...) printf(__VA_ARGS__)
+	#define xprintf(...)
+#else
+	#define xprintf(...)
+#endif
 
 #endif // !__HEADER_FILE_H__
 
