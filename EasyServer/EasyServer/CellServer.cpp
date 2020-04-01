@@ -310,8 +310,14 @@ void CellServer::AddClient(Client* client)
 
 void CellServer::AddSendTask(Client* client, DataHeader* data)
 {
-	CellSendMsg2ClientTask* task = new CellSendMsg2ClientTask(client, data);
-	cell_task_svr_->AddTask(task);
+	cell_task_svr_->AddTask(
+		[client, data]
+		()
+		{
+			client->SendData(data);
+			delete data;
+		}
+	);
 }
 
 CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client* client, DataHeader* data)

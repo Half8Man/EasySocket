@@ -19,7 +19,7 @@ public:
 private:
 };
 
-class CellSendMsg2ClientTask :public CellTask
+class CellSendMsg2ClientTask
 {
 public:
 	CellSendMsg2ClientTask(Client* client, DataHeader* data);

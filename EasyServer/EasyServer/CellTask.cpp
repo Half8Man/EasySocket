@@ -1,19 +1,5 @@
 #include "CellTask.h"
 
-CellTask::CellTask()
-{
-}
-
-CellTask::~CellTask()
-{
-}
-
-void CellTask::DoTask()
-{
-}
-
-/**********************************************************************/
-
 CellTaskServer::CellTaskServer()
 {
 	task_list_ = {};
@@ -30,7 +16,7 @@ CellTaskServer::~CellTaskServer()
 	}
 }
 
-void CellTaskServer::AddTask(CellTask* cell_task)
+void CellTaskServer::AddTask(CellTask cell_task)
 {
 	std::lock_guard<std::mutex> lock(task_mutex_);
 
@@ -70,9 +56,7 @@ void CellTaskServer::OnRun()
 		// 处理任务
 		for (auto& cell_task : task_list_)
 		{
-			cell_task->DoTask();
-
-			delete cell_task;
+			cell_task();
 		}
 
 		// 清空任务
