@@ -1,7 +1,7 @@
 ﻿#include "EasyTcpClient.h"
 
 EasyTcpClient::EasyTcpClient()
-	:client_sock_(INVALID_SOCKET), last_pos(0)
+	: client_sock_(INVALID_SOCKET), last_pos(0)
 {
 	//memset(first_data_buffer_, 0, sizeof(first_data_buffer_));
 	memset(second_data_buffer_, 0, sizeof(second_data_buffer_));
@@ -44,7 +44,7 @@ SOCKET EasyTcpClient::InitSocket()
 	return 0;
 }
 
-int EasyTcpClient::Connect(const char* ip, unsigned short port)
+int EasyTcpClient::Connect(const char *ip, unsigned short port)
 {
 	if (client_sock_ == INVALID_SOCKET)
 		(void)InitSocket();
@@ -56,7 +56,7 @@ int EasyTcpClient::Connect(const char* ip, unsigned short port)
 	client_addr.sin_addr.s_addr = inet_addr(ip);
 	client_addr.sin_port = htons(port);
 
-	auto ret = connect(client_sock_, (sockaddr*)&client_addr, sizeof(sockaddr_in));
+	auto ret = connect(client_sock_, (sockaddr *)&client_addr, sizeof(sockaddr_in));
 	//if (ret == SOCKET_ERROR)
 	//	printf("连接服务器失败\n");
 	//else
@@ -79,17 +79,17 @@ void EasyTcpClient::Close()
 	client_sock_ = INVALID_SOCKET;
 }
 
-int EasyTcpClient::SendData(DataHeader* data)
+int EasyTcpClient::SendData(DataHeader *data)
 {
 	if (IsRun() && data)
-		return send(client_sock_, (const char*)data, data->data_len, 0);
+		return send(client_sock_, (const char *)data, data->data_len, 0);
 
 	return -1;
 }
 
 int EasyTcpClient::OnRecvData()
 {
-	char* first_data_buffer = second_data_buffer_ + last_pos;
+	char *first_data_buffer = second_data_buffer_ + last_pos;
 	int len = recv(client_sock_, first_data_buffer, kBufferSize - last_pos, 0);
 	if (len <= 0)
 	{
@@ -107,7 +107,7 @@ int EasyTcpClient::OnRecvData()
 	while (last_pos >= sizeof(DataHeader))
 	{
 		// 此时可通过header知道消息总长度
-		DataHeader* header = (DataHeader*)second_data_buffer_;
+		DataHeader *header = (DataHeader *)second_data_buffer_;
 
 		// 判断消息缓冲区的数据长度是否大于消息总长度
 		if (last_pos >= header->data_len)
@@ -132,27 +132,27 @@ int EasyTcpClient::OnRecvData()
 	return 0;
 }
 
-int EasyTcpClient::DealMsg(DataHeader* header)
+int EasyTcpClient::DealMsg(DataHeader *header)
 {
 	switch (header->cmd)
 	{
 	case Cmd::kCmdLoginRet:
 	{
-		LoginRetData* login_ret_data = (LoginRetData*)header;
+		LoginRetData *login_ret_data = (LoginRetData *)header;
 		printf("登录结果: %d \n", login_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdLogoutRet:
 	{
-		LogoutRetData* logout_ret_data = (LogoutRetData*)header;
+		LogoutRetData *logout_ret_data = (LogoutRetData *)header;
 		printf("登出结果: %d \n", logout_ret_data->ret);
 	}
 	break;
 
 	case Cmd::kCmdNewUserJoin:
 	{
-		NewUserJoinData* new_user_join_data = (NewUserJoinData*)header;
+		NewUserJoinData *new_user_join_data = (NewUserJoinData *)header;
 		printf("新用户加入, socket : %d \n", new_user_join_data->sock);
 	}
 	break;
@@ -185,7 +185,7 @@ int EasyTcpClient::OnRun()
 
 		FD_SET(client_sock_, &fd_read);
 
-		timeval t = { 0, 0 };
+		timeval t = {0, 0};
 		int select_ret = select(client_sock_ + 1, &fd_read, nullptr, nullptr, &t);
 		if (select_ret < 0)
 		{
