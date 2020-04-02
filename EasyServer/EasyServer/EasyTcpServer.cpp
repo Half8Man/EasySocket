@@ -1,7 +1,7 @@
 ﻿#include "EasyTcpServer.h"
 
 EasyTcpServer::EasyTcpServer()
-	:svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
+	: svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
 {
 	cell_server_vec_ = {};
 }
@@ -25,9 +25,9 @@ SOCKET EasyTcpServer::InitSock()
 	WSADATA data;
 	(void)WSAStartup(version, &data);
 #endif // _Win32
-	
+
 	svr_sock_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	
+
 	if (svr_sock_ == INVALID_SOCKET)
 	{
 		printf("建立socket失败\n");
@@ -41,7 +41,7 @@ SOCKET EasyTcpServer::InitSock()
 	return svr_sock_;
 }
 
-int EasyTcpServer::Bind(const char* ip, unsigned short port)
+int EasyTcpServer::Bind(const char *ip, unsigned short port)
 {
 	sockaddr_in sock_addr;
 	memset(&sock_addr, 0, sizeof(sockaddr_in));
@@ -57,7 +57,7 @@ int EasyTcpServer::Bind(const char* ip, unsigned short port)
 		sock_addr.sin_addr.s_addr = INADDR_ANY;
 	}
 
-	int ret = bind(svr_sock_, (sockaddr*)&sock_addr, sizeof(sock_addr));
+	int ret = bind(svr_sock_, (sockaddr *)&sock_addr, sizeof(sock_addr));
 
 	if (ret == SOCKET_ERROR)
 	{
@@ -97,9 +97,9 @@ SOCKET EasyTcpServer::Accept()
 	SOCKET client_sock = INVALID_SOCKET;
 
 #ifdef _WIN32
-	client_sock = accept(svr_sock_, (sockaddr*)&client_addr, &len);
+	client_sock = accept(svr_sock_, (sockaddr *)&client_addr, &len);
 #else
-	client_sock = accept(svr_sock_, (sockaddr*)&client_addr, (socklen_t*)&len);
+	client_sock = accept(svr_sock_, (sockaddr *)&client_addr, (socklen_t *)&len);
 #endif // _WIN32
 
 	if (client_sock == INVALID_SOCKET)
@@ -118,13 +118,13 @@ void EasyTcpServer::Start(int cell_server_count)
 {
 	for (int i = 0; i < cell_server_count; i++)
 	{
-		CellServer* cell_server = new CellServer(svr_sock_, this);
+		CellServer *cell_server = new CellServer(svr_sock_, this);
 		cell_server_vec_.push_back(cell_server);
 		cell_server->Start();
 	}
 }
 
-void EasyTcpServer::AddClient2CellServer(Client* client)
+void EasyTcpServer::AddClient2CellServer(Client *client)
 {
 	if (client)
 	{
@@ -183,7 +183,7 @@ bool EasyTcpServer::OnRun()
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
-		timeval time_val = { 0, 10 };
+		timeval time_val = {0, 10};
 		int ret = select(int(max_sock) + 1, &fd_read, &fd_write, &fd_exp, &time_val);
 		if (ret < 0)
 		{
@@ -223,26 +223,24 @@ void EasyTcpServer::Time4Pkg()
 }
 
 // 线程不安全
-void EasyTcpServer::OnJoin(Client* client)
+void EasyTcpServer::OnJoin(Client *client)
 {
 	client_count_++;
 }
 
 // 线程不安全
-void EasyTcpServer::OnLeave(Client* client)
+void EasyTcpServer::OnLeave(Client *client)
 {
 	client_count_--;
 }
 
 // 线程不安全
-void EasyTcpServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
+void EasyTcpServer::OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header)
 {
 	msg_count_++;
 }
 
-void EasyTcpServer::OnNetRecv(Client* client)
+void EasyTcpServer::OnNetRecv(Client *client)
 {
 	recv_count_++;
 }
-
-

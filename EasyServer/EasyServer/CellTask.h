@@ -1,12 +1,13 @@
-#ifndef __CELL_TASK_H__
+ï»¿#ifndef __CELL_TASK_H__
 #define __CELL_TASK_H__
 
 #include "HeaderFile.h"
 
-// Ö´ĞĞÈÎÎñµÄ·şÎñÀà
+// æ‰§è¡Œä»»åŠ¡çš„æœåŠ¡ç±»
 class CellTaskServer
 {
 	typedef std::function<void()> CellTask;
+
 public:
 	CellTaskServer();
 	virtual ~CellTaskServer();
@@ -18,18 +19,17 @@ public:
 	void OnRun();
 
 private:
-	// ÈÎÎñÊı¾İ
+	// ä»»åŠ¡æ•°æ®
 	std::list<CellTask> task_list_ = {};
 
-	// ÈÎÎñÊı¾İ»º³åÇø
+	// ä»»åŠ¡æ•°æ®ç¼“å†²åŒº
 	std::list<CellTask> task_buffer_list_ = {};
 
-	// ¸Ä±äÈÎÎñÊı¾İ»º³åÇøÊ±ĞèÒª¼ÓËø
+	// æ”¹å˜ä»»åŠ¡æ•°æ®ç¼“å†²åŒºæ—¶éœ€è¦åŠ é”
 	std::mutex task_mutex_;
 
-	// ¹¤×÷Ïß³Ì
-	std::thread* task_thread_ = nullptr;
+	// å·¥ä½œçº¿ç¨‹
+	std::thread *task_thread_ = nullptr;
 };
-
 
 #endif // !__CELL_TASK_H__

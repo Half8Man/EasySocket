@@ -1,4 +1,4 @@
-#include "CellTask.h"
+ï»¿#include "CellTask.h"
 
 CellTaskServer::CellTaskServer()
 {
@@ -33,18 +33,18 @@ void CellTaskServer::OnRun()
 {
 	while (true)
 	{
-		// ´Ó»º³åÇøÈ¡³öÊı¾İ
+		// ä»ç¼“å†²åŒºå–å‡ºæ•°æ®
 		if (!task_buffer_list_.empty())
 		{
 			std::lock_guard<std::mutex> lock(task_mutex_);
-			for (auto& cell_task : task_buffer_list_)
+			for (auto &cell_task : task_buffer_list_)
 			{
 				task_list_.push_back(cell_task);
 			}
 			task_buffer_list_.clear();
 		}
 
-		// Èç¹ûÃ»ÓĞÈÎÎñ
+		// å¦‚æœæ²¡æœ‰ä»»åŠ¡
 		if (task_list_.empty())
 		{
 			std::chrono::milliseconds delay_time(1);
@@ -53,13 +53,13 @@ void CellTaskServer::OnRun()
 			continue;
 		}
 
-		// ´¦ÀíÈÎÎñ
-		for (auto& cell_task : task_list_)
+		// å¤„ç†ä»»åŠ¡
+		for (auto &cell_task : task_list_)
 		{
 			cell_task();
 		}
 
-		// Çå¿ÕÈÎÎñ
+		// æ¸…ç©ºä»»åŠ¡
 		task_list_.clear();
 	}
 }

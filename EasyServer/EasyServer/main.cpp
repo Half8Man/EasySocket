@@ -1,6 +1,6 @@
-#include "EasyTcpServer.h"
+﻿#include "EasyTcpServer.h"
 
-const char* kIp = "127.0.0.1";
+const char *kIp = "127.0.0.1";
 const int kPort = 2234;
 
 class EasyTcpServer;

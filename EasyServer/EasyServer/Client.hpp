@@ -1,4 +1,4 @@
-#ifndef __CLIENT_H__
+ï»¿#ifndef __CLIENT_H__
 #define __CLIENT_H__
 
 #include "HeaderFile.h"
@@ -8,7 +8,7 @@ class Client
 {
 public:
 	Client(SOCKET sock)
-		:client_sock_(sock), recv_last_pos_(0), send_last_pos_(0)
+		: client_sock_(sock), recv_last_pos_(0), send_last_pos_(0)
 	{
 		memset(recv_data_buffer_, 0, sizeof(recv_data_buffer_));
 		memset(send_data_buffer_, 0, sizeof(send_data_buffer_));
@@ -18,12 +18,12 @@ public:
 	{
 	}
 
-	inline char* GetRecvDataBuffer()
+	inline char *GetRecvDataBuffer()
 	{
 		return recv_data_buffer_;
 	}
 
-	inline char* GetSendDataBuffer()
+	inline char *GetSendDataBuffer()
 	{
 		return send_data_buffer_;
 	}
@@ -53,38 +53,38 @@ public:
 		return client_sock_;
 	}
 
-	// ¶¨Ê±¶¨Á¿·¢ËÍÊı¾İ
-	int SendData(DataHeader* data)
+	// å®šæ—¶å®šé‡å‘é€æ•°æ®
+	int SendData(DataHeader *data)
 	{
 		int ret = SOCKET_ERROR;
 
 		if (data)
 		{
-			// Òª·¢ËÍµÄÊı¾İ³¤¶È
+			// è¦å‘é€çš„æ•°æ®é•¿åº¦
 			int send_data_len = data->data_len;
-			// Òª·¢ËÍµÄÊı¾İ
-			const char* send_data = (const char*)data;
+			// è¦å‘é€çš„æ•°æ®
+			const char *send_data = (const char *)data;
 
 			while (true)
 			{
 				if (send_last_pos_ + send_data_len >= kSendBufferSize)
 				{
-					// ¼ÆËã¿ÉÒÔ¿½±´µÄÊı¾İ³¤¶È
+					// è®¡ç®—å¯ä»¥æ‹·è´çš„æ•°æ®é•¿åº¦
 					int copy_len = kSendBufferSize - send_last_pos_;
 
-					// ¿½±´Êı¾İ
+					// æ‹·è´æ•°æ®
 					memcpy(send_data_buffer_ + send_last_pos_, send_data, copy_len);
 
-					// ¼ÆËãÊ£ÓàÊı¾İÎ»ÖÃ
+					// è®¡ç®—å‰©ä½™æ•°æ®ä½ç½®
 					send_data += copy_len;
 
-					// ¼ÆËãÊ£ÓàÊı¾İ³¤¶È
+					// è®¡ç®—å‰©ä½™æ•°æ®é•¿åº¦
 					send_data_len -= copy_len;
 
-					// ·¢ËÍÊı¾İ
+					// å‘é€æ•°æ®
 					ret = send(client_sock_, send_data_buffer_, kSendBufferSize, 0);
 
-					// Êı¾İÎ²²¿Î»ÖÃÖÃÁã
+					// æ•°æ®å°¾éƒ¨ä½ç½®ç½®é›¶
 					send_last_pos_ = 0;
 
 					if (ret == SOCKET_ERROR)
@@ -94,10 +94,10 @@ public:
 				}
 				else
 				{
-					// ¿½±´Êı¾İµ½·¢ËÍ»º³åÇøÎ²²¿
+					// æ‹·è´æ•°æ®åˆ°å‘é€ç¼“å†²åŒºå°¾éƒ¨
 					memcpy(send_data_buffer_ + send_last_pos_, send_data, send_data_len);
 
-					// Êı¾İÎ²²¿Î»ÖÃÆ«ÒÆ
+					// æ•°æ®å°¾éƒ¨ä½ç½®åç§»
 					send_last_pos_ += send_data_len;
 
 					break;
@@ -111,16 +111,16 @@ public:
 private:
 	SOCKET client_sock_ = INVALID_SOCKET;
 
-	// ½ÓÊÕ»º³åÇø
+	// æ¥æ”¶ç¼“å†²åŒº
 	char recv_data_buffer_[kRecvBufferSize] = {};
 
-	// ·¢ËÍ»º³åÇø
+	// å‘é€ç¼“å†²åŒº
 	char send_data_buffer_[kSendBufferSize] = {};
 
-	// ½ÓÊÕ»º³åÇøµÄÊı¾İÎ²²¿Î»ÖÃ
+	// æ¥æ”¶ç¼“å†²åŒºçš„æ•°æ®å°¾éƒ¨ä½ç½®
 	int recv_last_pos_ = 0;
 
-	// ·¢ËÍ»º³åÇøµÄÊı¾İÎ²²¿Î»ÖÃ
+	// å‘é€ç¼“å†²åŒºçš„æ•°æ®å°¾éƒ¨ä½ç½®
 	int send_last_pos_ = 0;
 };
 

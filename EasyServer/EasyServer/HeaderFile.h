@@ -1,4 +1,4 @@
-#ifndef __HEADER_FILE_H__
+﻿#ifndef __HEADER_FILE_H__
 #define __HEADER_FILE_H__
 
 #ifdef _WIN32
@@ -6,13 +6,13 @@
 	#define _WINSOCK_DEPRECATED_NO_WARNINGS
 	#define FD_SETSIZE 1024
 
-	#include<windows.h>
-	#include<WinSock2.h>
-	#pragma comment(lib,"ws2_32.lib")
+	#include <windows.h>
+	#include <WinSock2.h>
+	#pragma comment(lib, "ws2_32.lib")
 #else
-	#include<unistd.h>
-	#include<arpa/inet.h>
-	#include<string.h>
+	#include <unistd.h>
+	#include <arpa/inet.h>
+	#include <string.h>
 
 	typedef int SOCKET
 	#define INVALID_SOCKET (int)(~0)
@@ -33,4 +33,3 @@
 #include <stdio.h>
 
 #endif // !__HEADER_FILE_H__
-

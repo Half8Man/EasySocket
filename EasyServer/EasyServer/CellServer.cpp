@@ -1,12 +1,12 @@
-#include "CellServer.h"
+ï»¿#include "CellServer.h"
 
-CellServer::CellServer(SOCKET sock, INetEvent* inet_event)
-	:svr_sock_(sock),
-	inet_event_(inet_event),
-	work_thread_(nullptr),
-	is_clients_change_(false),
-	max_sock_(0),
-	cell_task_svr_(nullptr)
+CellServer::CellServer(SOCKET sock, INetEvent *inet_event)
+	: svr_sock_(sock),
+	  inet_event_(inet_event),
+	  work_thread_(nullptr),
+	  is_clients_change_(false),
+	  max_sock_(0),
+	  cell_task_svr_(nullptr)
 {
 	FD_ZERO(&fd_read_backup_);
 }
@@ -43,8 +43,8 @@ void CellServer::Close()
 {
 	if (IsRun())
 	{
-		// ¹Ø±Õ¿Í»§¶Ë socket
-		for (const auto& client_pair : client_map_)
+		// å…³é—­å®¢æˆ·ç«¯ socket
+		for (const auto &client_pair : client_map_)
 		{
 			auto client = client_pair.second;
 			if (client)
@@ -57,10 +57,10 @@ void CellServer::Close()
 		client_map_.clear();
 
 #ifdef _WIN32
-		// ¹Ø±Õ·şÎñ¶Ë socket
+		// å…³é—­æœåŠ¡ç«¯ socket
 		closesocket(svr_sock_);
 #else
-		// ¹Ø±Õ·şÎñ¶Ë socket
+		// å…³é—­æœåŠ¡ç«¯ socket
 		close(svr_sock_);
 #endif // _WIN32
 	}
@@ -79,7 +79,7 @@ bool CellServer::OnRun()
 		if (!client_buff_vec_.empty())
 		{
 			std::lock_guard<std::mutex> lock(client_mutex_);
-			for (const auto& client : client_buff_vec_)
+			for (const auto &client : client_buff_vec_)
 			{
 				client_map_[client->GetSock()] = client;
 			}
@@ -87,28 +87,28 @@ bool CellServer::OnRun()
 			is_clients_change_ = true;
 		}
 
-		// Èç¹ûÃ»ÓĞĞèÒª´¦ÀíµÄ¿Í»§¶Ë£¬Ìø¹ı
+		// å¦‚æœæ²¡æœ‰éœ€è¦å¤„ç†çš„å®¢æˆ·ç«¯ï¼Œè·³è¿‡
 		if (client_map_.empty())
 		{
-			// ĞİÃßÒ»ºÁÃë
+			// ä¼‘çœ ä¸€æ¯«ç§’
 			std::chrono::milliseconds sleep_time(1);
 			std::this_thread::sleep_for(sleep_time);
 			continue;
 		}
 
-		// ²®¿ËÀûsocket¼¯ºÏ
+		// ä¼¯å…‹åˆ©socketé›†åˆ
 		fd_set fd_read;
 
-		// Çå¿Õ¼¯ºÏ
+		// æ¸…ç©ºé›†åˆ
 		FD_ZERO(&fd_read);
 
 		if (is_clients_change_)
 		{
 			is_clients_change_ = false;
 
-			// ¼ÆËã×î´ósocket
+			// è®¡ç®—æœ€å¤§socket
 			max_sock_ = client_map_.begin()->second->GetSock();
-			for (const auto& client_pair : client_map_)
+			for (const auto &client_pair : client_map_)
 			{
 				auto client = client_pair.second;
 				SOCKET sock = client->GetSock();
@@ -125,22 +125,22 @@ bool CellServer::OnRun()
 			memcpy(&fd_read, &fd_read_backup_, sizeof(fd_set));
 		}
 
-		// nfds ÊÇÒ»¸öint£¬ÊÇÖ¸fd_set¼¯ºÏÖĞËùÓĞsocketµÄ·¶Î§£¨×î´óÖµ¼Ó1£©£¬¶ø²»ÊÇÊıÁ¿¡£
-		// windows ÖĞ¿ÉÒÔ´«0
-		timeval time_val = { 0, 0 };
+		// nfds æ˜¯ä¸€ä¸ªintï¼Œæ˜¯æŒ‡fd_seté›†åˆä¸­æ‰€æœ‰socketçš„èŒƒå›´ï¼ˆæœ€å¤§å€¼åŠ 1ï¼‰ï¼Œè€Œä¸æ˜¯æ•°é‡ã€‚
+		// windows ä¸­å¯ä»¥ä¼ 0
+		timeval time_val = {0, 0};
 		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, nullptr);
 		if (ret < 0)
 		{
-			printf("select < 0, ÈÎÎñ½áÊø\n");
+			printf("select < 0, ä»»åŠ¡ç»“æŸ\n");
 			Close();
 			return false;
 		}
-		else if(ret == 0)
+		else if (ret == 0)
 		{
 			continue;
 		}
 
-		std::vector<Client*> client_vec_temp = {};
+		std::vector<Client *> client_vec_temp = {};
 
 		for (int i = 0; i < int(fd_read.fd_count); i++)
 		{
@@ -148,7 +148,7 @@ bool CellServer::OnRun()
 			if (iter != client_map_.end())
 			{
 				auto client = iter->second;
-				// ËµÃ÷¿Í»§¶ËÍË³öÁË
+				// è¯´æ˜å®¢æˆ·ç«¯é€€å‡ºäº†
 				if (RecvData(client) < 0)
 				{
 					is_clients_change_ = true;
@@ -162,7 +162,7 @@ bool CellServer::OnRun()
 			}
 		}
 
-		for (const auto* client : client_vec_temp)
+		for (const auto *client : client_vec_temp)
 		{
 			if (client)
 			{
@@ -181,47 +181,47 @@ bool CellServer::IsRun()
 	return (svr_sock_ != INVALID_SOCKET);
 }
 
-int CellServer::RecvData(Client* client)
+int CellServer::RecvData(Client *client)
 {
-	char* recv_data_buffer = client->GetRecvDataBuffer() + client->GetRecvLastPos();
+	char *recv_data_buffer = client->GetRecvDataBuffer() + client->GetRecvLastPos();
 	int len = recv(client->GetSock(), recv_data_buffer, kRecvBufferSize - client->GetRecvLastPos(), 0);
 	inet_event_->OnNetRecv(client);
 	if (len <= 0)
 	{
-		printf("¿Í»§¶ËÒÑÍË³ö£¬ÈÎÎñ½áÊø\n");
+		printf("å®¢æˆ·ç«¯å·²é€€å‡ºï¼Œä»»åŠ¡ç»“æŸ\n");
 		return -1;
 	}
 
-	// ½«ÊÕµ½µÄÊı¾İ¿½±´µ½ÏûÏ¢»º³åÇø
+	// å°†æ”¶åˆ°çš„æ•°æ®æ‹·è´åˆ°æ¶ˆæ¯ç¼“å†²åŒº
 	//memcpy(client->GetRecvDataBuffer() + client->GetRecvLastPos(), recv_data_buffer, len);
 
-	// »º³åÇøµÄÊı¾İÎ²²¿ºóÒÆ
+	// ç¼“å†²åŒºçš„æ•°æ®å°¾éƒ¨åç§»
 	client->SetRecvLastPos(client->GetRecvLastPos() + len);
 
-	// ÅĞ¶ÏÏûÏ¢»º³åÇøµÄÊı¾İ³¤¶ÈÊÇ¶¼´óÓÚÏûÏ¢Í·DataHeaderµÄ³¤¶È
+	// åˆ¤æ–­æ¶ˆæ¯ç¼“å†²åŒºçš„æ•°æ®é•¿åº¦æ˜¯éƒ½å¤§äºæ¶ˆæ¯å¤´DataHeaderçš„é•¿åº¦
 	while (client->GetRecvLastPos() >= sizeof(DataHeader))
 	{
-		// ÕâÊ±¾Í¿ÉÒÔÖªµÀµ±Ç°ÏûÏ¢µÄ³¤¶È
-		DataHeader* header = (DataHeader*)client->GetRecvDataBuffer();
+		// è¿™æ—¶å°±å¯ä»¥çŸ¥é“å½“å‰æ¶ˆæ¯çš„é•¿åº¦
+		DataHeader *header = (DataHeader *)client->GetRecvDataBuffer();
 
-		// ÅĞ¶ÏÏûÏ¢»º³åÇøµÄÊı¾İ³¤¶ÈÊÇ·ñ´óÓÚÒ»ÌõÍêÕûÏûÏ¢³¤¶È
+		// åˆ¤æ–­æ¶ˆæ¯ç¼“å†²åŒºçš„æ•°æ®é•¿åº¦æ˜¯å¦å¤§äºä¸€æ¡å®Œæ•´æ¶ˆæ¯é•¿åº¦
 		if (client->GetRecvLastPos() >= header->data_len)
 		{
-			// Î´´¦ÀíµÄÏûÏ¢µÄ³¤¶È
+			// æœªå¤„ç†çš„æ¶ˆæ¯çš„é•¿åº¦
 			int size = client->GetRecvLastPos() - header->data_len;
 
-			// ´¦ÀíÏûÏ¢
+			// å¤„ç†æ¶ˆæ¯
 			OnNetMsg(this, client, header);
 
-			// ½«ÏûÏ¢»º³åÇøµÄÎ´´¦ÀíµÄÊı¾İÇ°ÒÆ
+			// å°†æ¶ˆæ¯ç¼“å†²åŒºçš„æœªå¤„ç†çš„æ•°æ®å‰ç§»
 			memcpy(client->GetRecvDataBuffer(), client->GetRecvDataBuffer() + header->data_len, size);
 
-			// ½«ÏûÏ¢»º³åÇøÊı¾İÎ²²¿Î»ÖÃÇ°ÒÆ
+			// å°†æ¶ˆæ¯ç¼“å†²åŒºæ•°æ®å°¾éƒ¨ä½ç½®å‰ç§»
 			client->SetRecvLastPos(size);
 		}
 		else
 		{
-			// »º³åÇøµÄÊı¾İ³¤¶È²»×ãÒ»ÌõÍêÕûÏûÏ¢³¤¶È
+			// ç¼“å†²åŒºçš„æ•°æ®é•¿åº¦ä¸è¶³ä¸€æ¡å®Œæ•´æ¶ˆæ¯é•¿åº¦
 			break;
 		}
 	}
@@ -229,7 +229,7 @@ int CellServer::RecvData(Client* client)
 	return 0;
 }
 
-int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* header)
+int CellServer::OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header)
 {
 	inet_event_->OnNetMsg(this, client, header);
 
@@ -237,24 +237,24 @@ int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* heade
 	{
 	case Cmd::kCmdLogin:
 	{
-		LoginData* login_data = (LoginData*)header;
-		//printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogin, Êı¾İ³¤¶È £º%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
+		LoginData *login_data = (LoginData *)header;
+		//printf("æ”¶åˆ°å‘½ä»¤ï¼Œcmd : kCmdLogin, æ•°æ®é•¿åº¦ ï¼š%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
-		// ºöÂÔÅĞ¶ÏÕËºÅÃÜÂëÂß¼­
+		// å¿½ç•¥åˆ¤æ–­è´¦å·å¯†ç é€»è¾‘
 		//LoginRetData login_ret_data = {};
 		//(void)client->SendData(&login_ret_data);
 
-		LoginRetData* login_ret_data = new LoginRetData();
+		LoginRetData *login_ret_data = new LoginRetData();
 		cell_svr->AddSendTask(client, login_ret_data);
 	}
 	break;
 
 	case Cmd::kCmdLogout:
 	{
-		LogoutData* logout_data = (LogoutData*)header;
-		//printf("ÊÕµ½ÃüÁî£¬cmd : kCmdLogout, Êı¾İ³¤¶È £º%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
+		LogoutData *logout_data = (LogoutData *)header;
+		//printf("æ”¶åˆ°å‘½ä»¤ï¼Œcmd : kCmdLogout, æ•°æ®é•¿åº¦ ï¼š%d, user_name : %s\n", logout_data->data_len, logout_data->user_name);
 
-		// ºöÂÔÅĞ¶ÏÕËºÅÃÜÂëÂß¼­
+		// å¿½ç•¥åˆ¤æ–­è´¦å·å¯†ç é€»è¾‘
 		LogoutRetData logout_ret_data = {};
 		(void)client->SendData(&logout_ret_data);
 	}
@@ -262,7 +262,7 @@ int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* heade
 
 	default:
 	{
-		printf("ÊÕµ½´íÎóÃüÁî£¬cmd : %d\n", header->cmd);
+		printf("æ”¶åˆ°é”™è¯¯å‘½ä»¤ï¼Œcmd : %d\n", header->cmd);
 
 		DataHeader temp = {};
 		temp.cmd = Cmd::kCmdError;
@@ -275,29 +275,29 @@ int CellServer::OnNetMsg(CellServer* cell_svr, Client* client, DataHeader* heade
 	return 0;
 }
 
-int CellServer::SendData(DataHeader* data, SOCKET client_sock)
+int CellServer::SendData(DataHeader *data, SOCKET client_sock)
 {
 	if (IsRun() && data)
 	{
-		return send(client_sock, (const char*)data, data->data_len, 0);
+		return send(client_sock, (const char *)data, data->data_len, 0);
 	}
 
 	return SOCKET_ERROR;
 }
 
-void CellServer::SendData(DataHeader* data)
+void CellServer::SendData(DataHeader *data)
 {
 	if (IsRun() && data)
 	{
-		for (const auto& client_pair : client_map_)
+		for (const auto &client_pair : client_map_)
 		{
 			auto client = client_pair.second;
-			send(client->GetSock(), (const char*)data, data->data_len, 0);
+			send(client->GetSock(), (const char *)data, data->data_len, 0);
 		}
 	}
 }
 
-void CellServer::AddClient(Client* client)
+void CellServer::AddClient(Client *client)
 {
 	if (client)
 	{
@@ -308,19 +308,16 @@ void CellServer::AddClient(Client* client)
 	inet_event_->OnJoin(client);
 }
 
-void CellServer::AddSendTask(Client* client, DataHeader* data)
+void CellServer::AddSendTask(Client *client, DataHeader *data)
 {
 	cell_task_svr_->AddTask(
-		[client, data]
-		()
-		{
+		[client, data]() {
 			client->SendData(data);
 			delete data;
-		}
-	);
+		});
 }
 
-CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client* client, DataHeader* data)
+CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client *client, DataHeader *data)
 {
 	client_ = client;
 	data_ = data;
