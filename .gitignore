@@ -32,10 +32,20 @@
 *.app
 
 #custome
+*.sln
+*.filters
+*.vcxproj
+*.user
+*.cmake
+
+CMakeFiles/
+
 EasyServer/.vs/
 EasyServer/.idea/
 EasyServer/cmake-build-debug/
+EasyServer/CMakeCache.txt
 
 EasyClient/.vs/
 EasyClient/.idea/
 EasyClient/cmake-build-debug/
+EasyClient/CMakeCache.txt
