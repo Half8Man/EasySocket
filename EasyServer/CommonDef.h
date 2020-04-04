@@ -11,7 +11,7 @@ const int kSendBufferSize = 10240;
 const int kCellServerCount = 4;
 
 // 死亡时间 毫秒
-const int kClinetDeadTime = 500;
+const int kClientDeadTime = 500;
 
 enum Cmd
 {
@@ -34,7 +34,7 @@ struct DataHeader
 // DataPackage
 struct LoginData : public DataHeader
 {
-	LoginData()
+	LoginData() : DataHeader()
 	{
 		data_len = sizeof(LoginData);
 		cmd = Cmd::kCmdLogin;
@@ -46,7 +46,7 @@ struct LoginData : public DataHeader
 
 struct LoginRetData : public DataHeader
 {
-	LoginRetData()
+	LoginRetData() : DataHeader()
 	{
 		data_len = sizeof(LoginRetData);
 		cmd = Cmd::kCmdLoginRet;
@@ -58,7 +58,7 @@ struct LoginRetData : public DataHeader
 
 struct LogoutData : public DataHeader
 {
-	LogoutData()
+	LogoutData() : DataHeader()
 	{
 		data_len = sizeof(data_len);
 		cmd = Cmd::kCmdLogout;
@@ -69,7 +69,7 @@ struct LogoutData : public DataHeader
 
 struct LogoutRetData : public DataHeader
 {
-	LogoutRetData()
+	LogoutRetData() : DataHeader()
 	{
 		data_len = sizeof(LogoutRetData);
 		cmd = Cmd::kCmdLogoutRet;
@@ -81,7 +81,7 @@ struct LogoutRetData : public DataHeader
 
 struct NewUserJoinData : public DataHeader
 {
-	NewUserJoinData()
+	NewUserJoinData() : DataHeader()
 	{
 		data_len = sizeof(NewUserJoinData);
 		cmd = Cmd::kCmdNewUserJoin;
@@ -92,7 +92,7 @@ struct NewUserJoinData : public DataHeader
 
 struct HeartBeatC2sData : public DataHeader
 {
-	HeartBeatC2sData()
+	HeartBeatC2sData() : DataHeader()
 	{
 		data_len = sizeof(HeartBeatC2sData);
 		cmd = Cmd::kCmdHeartBeatC2s;
@@ -101,7 +101,7 @@ struct HeartBeatC2sData : public DataHeader
 
 struct HeartBeatS2cData : public DataHeader
 {
-	HeartBeatS2cData()
+	HeartBeatS2cData() : DataHeader()
 	{
 		data_len = sizeof(HeartBeatS2cData);
 		cmd = Cmd::kCmdHeartBeatS2c;

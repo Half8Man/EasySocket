@@ -7,16 +7,14 @@
 class Client
 {
 public:
-	Client(SOCKET sock)
+	explicit Client(SOCKET sock)
 		: client_sock_(sock), recv_last_pos_(0), send_last_pos_(0)
 	{
 		memset(recv_data_buffer_, 0, sizeof(recv_data_buffer_));
 		memset(send_data_buffer_, 0, sizeof(send_data_buffer_));
 	}
 
-	virtual ~Client()
-	{
-	}
+	virtual ~Client() = default;
 
 	inline char *GetRecvDataBuffer()
 	{
@@ -117,9 +115,9 @@ public:
 	{
 		heart_beat_delay_ += dt;
 
-		printf("heart_beat_delay_ == %I64d\n", heart_beat_delay_);
+//		printf("heart_beat_delay_ == %I64d\n", heart_beat_delay_);
 
-		return heart_beat_delay_ >= kClinetDeadTime;
+		return heart_beat_delay_ >= kClientDeadTime;
 	}
 
 private:
