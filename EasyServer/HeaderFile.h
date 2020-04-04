@@ -12,9 +12,9 @@
 #else
 	#include <unistd.h>
 	#include <arpa/inet.h>
-	#include <string.h>
+	#include <cstring>
 
-	typedef int SOCKET
+	typedef int SOCKET;
 	#define INVALID_SOCKET (int)(~0)
 	#define SOCKET_ERROR (-1)
 #endif
@@ -30,6 +30,6 @@
 #include <atomic>
 
 // c
-#include <stdio.h>
+#include <cstdio>
 
 #endif // !__HEADER_FILE_H__

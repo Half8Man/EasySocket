@@ -4,6 +4,7 @@
 #include "HeaderFile.h"
 #include "Client.hpp"
 #include "CellTask.h"
+#include "CELLTimeStamp.hpp"
 
 class CellServer;
 
@@ -49,6 +50,9 @@ public:
 	bool OnRun();
 	bool IsRun();
 	int RecvData(Client *client);
+	void ReadData(fd_set& fd_read);
+	void CheckTime();
+
 	virtual int OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header);
 	virtual int SendData(DataHeader *data, SOCKET client_sock);
 	virtual void SendData(DataHeader *data);
@@ -70,6 +74,8 @@ private:
 	SOCKET max_sock_ = 0;
 
 	CellTaskServer *cell_task_svr_ = nullptr;
+
+	time_t old_time_ = CellTime::GetCurTimeMilliSec();
 };
 
 #endif // !__CELL_SERVER_H__

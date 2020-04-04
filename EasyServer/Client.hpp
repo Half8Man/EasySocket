@@ -108,6 +108,20 @@ public:
 		return ret;
 	}
 
+	void ResetHeartBeatDelay()
+	{
+		heart_beat_delay_ = 0;
+	}
+
+	bool CheckHeart(time_t dt)
+	{
+		heart_beat_delay_ += dt;
+
+		printf("heart_beat_delay_ == %I64d\n", heart_beat_delay_);
+
+		return heart_beat_delay_ >= kClinetDeadTime;
+	}
+
 private:
 	SOCKET client_sock_ = INVALID_SOCKET;
 
@@ -122,6 +136,9 @@ private:
 
 	// 发送缓冲区的数据尾部位置
 	int send_last_pos_ = 0;
+
+	// 心跳死亡计时
+	time_t heart_beat_delay_ = 0;
 };
 
 #endif // !__CLIENT_H__

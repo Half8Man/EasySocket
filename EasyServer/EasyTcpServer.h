@@ -37,9 +37,9 @@ public:
 private:
 	SOCKET svr_sock_ = INVALID_SOCKET;
 	std::vector<CellServer *> cell_server_vec_ = {};
-	std::atomic_int msg_count_ = 0;
-	std::atomic_int recv_count_ = 0;
-	std::atomic_int client_count_ = 0;
+	std::atomic_int msg_count_;
+	std::atomic_int recv_count_;
+	std::atomic_int client_count_;
 	CELLTimeStamp time_stamp_;
 };
 

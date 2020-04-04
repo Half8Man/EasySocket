@@ -50,7 +50,11 @@ void CellServer::Close()
 			if (client)
 			{
 				SOCKET sock = client->GetSock();
-				closesocket(sock);
+#ifdef _WIN32
+                closesocket(sock);
+#else
+                close(sock);
+#endif
 				delete client;
 			}
 		}
@@ -90,6 +94,8 @@ bool CellServer::OnRun()
 		// 如果没有需要处理的客户端，跳过
 		if (client_map_.empty())
 		{
+			old_time_ = CellTime::GetCurTimeMilliSec();
+
 			// 休眠一毫秒
 			std::chrono::milliseconds sleep_time(1);
 			std::this_thread::sleep_for(sleep_time);
@@ -127,50 +133,21 @@ bool CellServer::OnRun()
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
-		timeval time_val = {0, 0};
-		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, nullptr);
+		timeval time_val = {0, 1};
+		int ret = select(int(max_sock_) + 1, &fd_read, nullptr, nullptr, &time_val);
 		if (ret < 0)
 		{
 			printf("select < 0, 任务结束\n");
 			Close();
 			return false;
 		}
-		else if (ret == 0)
-		{
-			continue;
-		}
+		//else if (ret == 0)
+		//{
+		//	continue;
+		//}
 
-		std::vector<Client *> client_vec_temp = {};
-
-		for (int i = 0; i < int(fd_read.fd_count); i++)
-		{
-			auto iter = client_map_.find(fd_read.fd_array[i]);
-			if (iter != client_map_.end())
-			{
-				auto client = iter->second;
-				// 说明客户端退出了
-				if (RecvData(client) < 0)
-				{
-					is_clients_change_ = true;
-					client_vec_temp.push_back(client);
-					inet_event_->OnLeave(client);
-				}
-			}
-			else
-			{
-				printf("error. if (iter != _clients.end())\n");
-			}
-		}
-
-		for (const auto *client : client_vec_temp)
-		{
-			if (client)
-			{
-				client_map_.erase(client->GetSock());
-				delete client;
-			}
-		}
-		client_vec_temp.clear();
+		ReadData(fd_read);
+		CheckTime();
 	}
 
 	return false;
@@ -229,23 +206,115 @@ int CellServer::RecvData(Client *client)
 	return 0;
 }
 
+void CellServer::ReadData(fd_set& fd_read)
+{
+	std::vector<Client*> client_vec_temp = {};
+
+#ifdef _WIN32
+	for (int i = 0; i < int(fd_read.fd_count); i++)
+	{
+		auto iter = client_map_.find(fd_read.fd_array[i]);
+		if (iter != client_map_.end())
+		{
+			auto client = iter->second;
+			// 说明客户端退出了
+			if (RecvData(client) < 0)
+			{
+				is_clients_change_ = true;
+				client_vec_temp.push_back(client);
+				inet_event_->OnLeave(client);
+			}
+		}
+		else
+		{
+			printf("error. if (iter != _clients.end())\n");
+		}
+	}
+#else
+	for (auto& iter : client_map_)
+	{
+		if (FD_ISSET(iter.second->GetSock(), &fd_read))
+		{
+			auto client = iter.second;
+			// 说明客户端退出了
+			if (RecvData(client) < 0)
+			{
+				is_clients_change_ = true;
+				client_vec_temp.push_back(client);
+				inet_event_->OnLeave(client);
+			}
+		}
+	}
+#endif // _WIN32
+
+	for (const auto* client : client_vec_temp)
+	{
+		if (client)
+		{
+			client_map_.erase(client->GetSock());
+			delete client;
+		}
+	}
+	client_vec_temp.clear();
+}
+
+void CellServer::CheckTime()
+{
+	auto now = CellTime::GetCurTimeMilliSec();
+	auto dt = now - old_time_;
+	old_time_ = now;
+
+	std::vector<Client*> client_vec_temp = {};
+
+	for (auto& iter : client_map_)
+	{
+		auto client = iter.second;
+		if (client->CheckHeart(dt))
+		{
+			printf("remove client\n");
+			is_clients_change_ = true;
+			client_vec_temp.push_back(client);
+			inet_event_->OnLeave(client);
+		}
+	}
+
+	for (const auto* client : client_vec_temp)
+	{
+		if (client)
+		{
+			client_map_.erase(client->GetSock());
+			delete client;
+		}
+	}
+	client_vec_temp.clear();
+}
+
 int CellServer::OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header)
 {
 	inet_event_->OnNetMsg(this, client, header);
 
 	switch (header->cmd)
 	{
+	case Cmd::kCmdHeartBeatC2s:
+	{
+		client->ResetHeartBeatDelay();
+
+		HeartBeatS2cData data = {};
+		(void)client->SendData(&data);
+	}
+	break;
+
 	case Cmd::kCmdLogin:
 	{
 		LoginData *login_data = (LoginData *)header;
 		//printf("收到命令，cmd : kCmdLogin, 数据长度 ：%d, user_name : %s, password : %s\n", login_data->data_len, login_data->user_name, login_data->password);
 
 		// 忽略判断账号密码逻辑
-		//LoginRetData login_ret_data = {};
-		//(void)client->SendData(&login_ret_data);
+		LoginRetData login_ret_data = {};
+		(void)client->SendData(&login_ret_data);
 
-		LoginRetData *login_ret_data = new LoginRetData();
-		cell_svr->AddSendTask(client, login_ret_data);
+		//LoginRetData *login_ret_data = new LoginRetData();
+		//cell_svr->AddSendTask(client, login_ret_data);
 	}
 	break;
 

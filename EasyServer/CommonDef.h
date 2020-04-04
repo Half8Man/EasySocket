@@ -10,8 +10,13 @@ const int kSendBufferSize = 10240;
 // cell server 数量
 const int kCellServerCount = 4;
 
+// 死亡时间 毫秒
+const int kClinetDeadTime = 500;
+
 enum Cmd
 {
+	kCmdHeartBeatC2s,
+	kCmdHeartBeatS2c,
 	kCmdLogin,
 	kCmdLoginRet,
 	kCmdLogout,
@@ -83,6 +88,24 @@ struct NewUserJoinData : public DataHeader
 	}
 
 	int sock = 0;
+};
+
+struct HeartBeatC2sData : public DataHeader
+{
+	HeartBeatC2sData()
+	{
+		data_len = sizeof(HeartBeatC2sData);
+		cmd = Cmd::kCmdHeartBeatC2s;
+	}
+};
+
+struct HeartBeatS2cData : public DataHeader
+{
+	HeartBeatS2cData()
+	{
+		data_len = sizeof(HeartBeatS2cData);
+		cmd = Cmd::kCmdHeartBeatS2c;
+	}
 };
 
 #endif // !__COMMON_DEF_H__
