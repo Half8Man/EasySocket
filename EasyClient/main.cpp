@@ -17,40 +17,8 @@ std::atomic_int ready_count = 0;
 
 EasyTcpClient* clients[client_count];
 
-void DealInput(/*EasyTcpClient* client*/)
+void DealInput()
 {
-
-	//while (true)
-	//{
-	//	std::string input;
-	//	std::cout << "请输入命令：" << std::endl;
-	//	std::cin >> input;
-
-	//	if (input == "login")
-	//	{
-	//		LoginData login_data;
-	//		strcpy(login_data.user_name, "wangjunhe");
-	//		strcpy(login_data.password, "123456");
-	//		client->SendData(&login_data);
-	//	}
-	//	else if (input == "logout")
-	//	{
-	//		LogoutData logout_data;
-	//		strcpy(logout_data.user_name, "wangjunhe");
-	//		client->SendData(&logout_data);
-	//	}
-	//	else if (input == "exit")
-	//	{
-	//		printf("任务结束\n");
-	//		can_run = false;
-	//		break;
-	//	}
-	//	else
-	//	{
-	//		printf("错误的命令，请重新输入\n");
-	//	}
-	//}
-
 	while (true)
 	{
 		std::string input;
@@ -97,9 +65,7 @@ void SendThread(int id)
 		std::this_thread::sleep_for(time);
 	}
 
-	LoginData login_data = {};
-	strcpy(login_data.user_name, "wangjunhe");
-	strcpy(login_data.password, "123456");
+	HeartBeatC2sData data = {};
 
 	while (can_run)
 	{
@@ -108,17 +74,17 @@ void SendThread(int id)
 		//	clients[i]->OnRun();
 		//}
 
-		// 休眠1000毫秒
-//		std::chrono::milliseconds sleep_time(100);
-//		std::this_thread::sleep_for(sleep_time);
-
 		for (int i = begin; i < end; i++)
 		{
-			if (clients[i]->SendData(&login_data) != SOCKET_ERROR)
+			if (clients[i]->SendData(&data) != SOCKET_ERROR)
 			{
 				send_count++;
 			}
 		}
+
+		// 休眠1微秒
+		//std::chrono::microseconds sleep_time(1);
+		//std::this_thread::sleep_for(sleep_time);
 	}
 
 	for (int i = begin; i < end; i++)
