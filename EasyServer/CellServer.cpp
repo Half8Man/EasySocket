@@ -99,6 +99,7 @@ bool CellServer::OnRun()
 			// 休眠一毫秒
 			std::chrono::milliseconds sleep_time(1);
 			std::this_thread::sleep_for(sleep_time);
+
 			continue;
 		}
 
@@ -221,6 +222,7 @@ void CellServer::ReadData(fd_set& fd_read)
 			if (RecvData(client) < 0)
 			{
 				is_clients_change_ = true;
+				closesocket(client->GetSock());
 				client_vec_temp.push_back(client);
 				inet_event_->OnLeave(client);
 			}
@@ -240,6 +242,7 @@ void CellServer::ReadData(fd_set& fd_read)
 			if (RecvData(client) < 0)
 			{
 				is_clients_change_ = true;
+				close(client->GetSock());
 				client_vec_temp.push_back(client);
 				inet_event_->OnLeave(client);
 			}
