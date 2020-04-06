@@ -8,10 +8,13 @@ class Client
 {
 public:
 	explicit Client(SOCKET sock)
-		: client_sock_(sock), recv_last_pos_(0), send_last_pos_(0)
+		: client_sock_(sock), recv_last_pos_(0), send_last_pos_(0), send_data_delay_(0), heart_beat_delay_(0)
 	{
 		memset(recv_data_buffer_, 0, sizeof(recv_data_buffer_));
 		memset(send_data_buffer_, 0, sizeof(send_data_buffer_));
+
+		ResetHeartBeatDelay();
+		ResetSendTime();
 	}
 
 	virtual ~Client() = default;
@@ -85,6 +88,9 @@ public:
 					// 数据尾部位置置零
 					send_last_pos_ = 0;
 
+					// 重置延迟时间
+					ResetSendTime();
+
 					if (ret == SOCKET_ERROR)
 					{
 						return ret;
@@ -106,6 +112,26 @@ public:
 		return ret;
 	}
 
+	// 立即发送数据
+	int SendData()
+	{
+		int ret = SOCKET_ERROR;
+		// 缓冲区有数据		
+		if (send_last_pos_ > 0 && client_sock_ != INVALID_SOCKET)
+		{
+			// 发送数据
+			ret = send(client_sock_, send_data_buffer_, kSendBufferSize, 0);
+
+			// 数据尾部位置置零
+			send_last_pos_ = 0;
+
+			// 重置延迟时间
+			ResetSendTime();
+		}
+
+		return ret;
+	}
+
 	void ResetHeartBeatDelay()
 	{
 		heart_beat_delay_ = 0;
@@ -115,9 +141,23 @@ public:
 	{
 		heart_beat_delay_ += dt;
 
-//		printf("heart_beat_delay_ == %I64d\n", heart_beat_delay_);
-
 		return heart_beat_delay_ >= kClientDeadTime;
+	}
+
+	void ResetSendTime()
+	{
+		send_data_delay_ = 0;
+	}
+
+	void CheckSend(time_t dt)
+	{
+		send_data_delay_ += dt;
+
+		if (send_data_delay_ >= kSendTime)
+		{
+			// 立即发送数据
+			SendData();
+		}
 	}
 
 private:
@@ -137,6 +177,9 @@ private:
 
 	// 心跳死亡计时
 	time_t heart_beat_delay_ = 0;
+
+	// 发送数据延迟
+	time_t send_data_delay_ = 0;
 };
 
 #endif // !__CLIENT_H__

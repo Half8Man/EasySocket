@@ -11,7 +11,10 @@ const int kSendBufferSize = 10240;
 const int kCellServerCount = 4;
 
 // 死亡时间 毫秒
-const int kClientDeadTime = 5000;
+const int kClientDeadTime = 60000;
+
+// 定时发送数据 毫秒
+const int kSendTime = 200;
 
 enum Cmd
 {

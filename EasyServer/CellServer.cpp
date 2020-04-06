@@ -272,6 +272,8 @@ void CellServer::CheckTime()
 	for (auto& iter : client_map_)
 	{
 		auto client = iter.second;
+
+		// 心跳检测
 		if (client->CheckHeart(dt))
 		{
 			printf("remove client\n");
@@ -279,6 +281,9 @@ void CellServer::CheckTime()
 			client_vec_temp.push_back(client);
 			inet_event_->OnLeave(client);
 		}
+
+		// 定时发送检测
+		client->CheckSend(dt);
 	}
 
 	for (const auto* client : client_vec_temp)
