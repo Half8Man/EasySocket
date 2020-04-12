@@ -4,11 +4,11 @@
 #include "HeaderFile.h"
 #include "CommonDef.h"
 #include "Client.hpp"
-#include "CELLTimeStamp.hpp"
+#include "CellTimeStamp.hpp"
 #include "CellServer.h"
 
 class Client;
-class CELLTimeStamp;
+class CellTimeStamp;
 class CellServer;
 
 class EasyTcpServer : public INetEvent
@@ -40,7 +40,7 @@ private:
 	std::atomic_int msg_count_;
 	std::atomic_int recv_count_;
 	std::atomic_int client_count_;
-	CELLTimeStamp time_stamp_;
+	CellTimeStamp time_stamp_;
 };
 
 #endif // !__EASY_TCP_SERVER_H__

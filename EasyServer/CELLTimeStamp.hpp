@@ -17,15 +17,15 @@ public:
 	}
 };
 
-class CELLTimeStamp
+class CellTimeStamp
 {
 public:
-	CELLTimeStamp()
+	CellTimeStamp()
 	{
 		Update();
 	}
 
-	virtual ~CELLTimeStamp()
+	virtual ~CellTimeStamp()
 	{
 	}
 

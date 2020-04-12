@@ -228,7 +228,7 @@ void EasyTcpServer::Time4Pkg()
 	auto time_temp = time_stamp_.GetElapsedSecond();
 	if (time_temp >= 1.0)
 	{
-		printf("时间 : %lf, svr_sock : %d, 客户端数量 : %d, recv次数 : %d, msg数量 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp), int(msg_count_ / time_temp));
+		printf("时间 : %lf, svr_sock : %lld, 客户端数量 : %d, recv次数 : %d, msg数量 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp), int(msg_count_ / time_temp));
 		time_stamp_.Update();
 		recv_count_ = 0;
 		msg_count_ = 0;
