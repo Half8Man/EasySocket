@@ -4,7 +4,7 @@
 #include "HeaderFile.h"
 #include "Client.hpp"
 #include "CellTask.h"
-#include "CELLTimeStamp.hpp"
+#include "CellTimeStamp.hpp"
 #include "CellSemaphore.hpp"
 
 class CellServer;
