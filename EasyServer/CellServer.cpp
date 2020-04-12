@@ -1,72 +1,66 @@
 ﻿#include "CellServer.h"
 
-CellServer::CellServer(SOCKET sock, INetEvent *inet_event)
-	: svr_sock_(sock),
-	  inet_event_(inet_event),
+CellServer::CellServer(int id, INetEvent *inet_event)
+	: inet_event_(inet_event),
 	  work_thread_(nullptr),
 	  is_clients_change_(false),
 	  max_sock_(0),
-	  cell_task_svr_(nullptr)
+	  cell_task_svr_(nullptr),
+	  is_run_(false),
+	  id_(id)
 {
 	FD_ZERO(&fd_read_backup_);
 }
 
 CellServer::~CellServer()
 {
+	Close();
+
 	if (work_thread_)
 	{
 		delete work_thread_;
 		work_thread_ = nullptr;
 	}
+
 	if (cell_task_svr_)
 	{
 		delete cell_task_svr_;
 		cell_task_svr_ = nullptr;
 	}
-
-	Close();
-	svr_sock_ = INVALID_SOCKET;
 }
 
 void CellServer::Start()
 {
-	work_thread_ = new std::thread(std::mem_fn(&CellServer::OnRun), this);
-
-	cell_task_svr_ = new CellTaskServer();
-	if (cell_task_svr_)
+	if (!is_run_)
 	{
-		cell_task_svr_->Start();
+		work_thread_ = new std::thread(std::mem_fn(&CellServer::OnRun), this);
+		work_thread_->detach();
+
+		cell_task_svr_ = new CellTaskServer();
+		if (cell_task_svr_)
+		{
+			cell_task_svr_->Start();
+		}
+
+		is_run_ = true;
 	}
 }
 
 void CellServer::Close()
 {
-	if (IsRun())
-	{
-		// 关闭客户端 socket
-		for (const auto &client_pair : client_map_)
-		{
-			auto client = client_pair.second;
-			if (client)
-			{
-				SOCKET sock = client->GetSock();
-#ifdef _WIN32
-                closesocket(sock);
-#else
-                close(sock);
-#endif
-				delete client;
-			}
-		}
-		client_map_.clear();
+	printf("%s %d start\n", __FUNCTION__, id_);
 
-#ifdef _WIN32
-		// 关闭服务端 socket
-		closesocket(svr_sock_);
-#else
-		// 关闭服务端 socket
-		close(svr_sock_);
-#endif // _WIN32
+	if (is_run_)
+	{
+		if (cell_task_svr_)
+		{
+			cell_task_svr_->Close();
+		}
+
+		is_run_ = false;
+		cell_sem_.Wait();
+
+		printf("%s %d end\n", __FUNCTION__, id_);
 	}
 }
 
@@ -78,7 +72,7 @@ int CellServer::GetClientCount() const
 bool CellServer::OnRun()
 {
 	is_clients_change_ = true;
-	while (IsRun())
+	while (is_run_)
 	{
 		if (!client_buff_vec_.empty())
 		{
@@ -151,12 +145,10 @@ bool CellServer::OnRun()
 		CheckTime();
 	}
 
-	return false;
-}
+	ClearClient();
+	cell_sem_.WakeUp();
 
-bool CellServer::IsRun()
-{
-	return (svr_sock_ != INVALID_SOCKET);
+	return false;
 }
 
 int CellServer::RecvData(Client *client)
@@ -222,7 +214,6 @@ void CellServer::ReadData(fd_set& fd_read)
 			if (RecvData(client) < 0)
 			{
 				is_clients_change_ = true;
-				closesocket(client->GetSock());
 				client_vec_temp.push_back(client);
 				inet_event_->OnLeave(client);
 			}
@@ -242,7 +233,6 @@ void CellServer::ReadData(fd_set& fd_read)
 			if (RecvData(client) < 0)
 			{
 				is_clients_change_ = true;
-				close(client->GetSock());
 				client_vec_temp.push_back(client);
 				inet_event_->OnLeave(client);
 			}
@@ -354,7 +344,7 @@ int CellServer::OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *heade
 
 int CellServer::SendData(DataHeader *data, SOCKET client_sock)
 {
-	if (IsRun() && data)
+	if (is_run_ && data)
 	{
 		return send(client_sock, (const char *)data, data->data_len, 0);
 	}
@@ -364,7 +354,7 @@ int CellServer::SendData(DataHeader *data, SOCKET client_sock)
 
 void CellServer::SendData(DataHeader *data)
 {
-	if (IsRun() && data)
+	if (is_run_ && data)
 	{
 		for (const auto &client_pair : client_map_)
 		{
@@ -393,6 +383,29 @@ void CellServer::AddSendTask(Client *client, DataHeader *data)
 			delete data;
 		});
 }
+
+void CellServer::ClearClient()
+{
+	for (const auto& client_pair : client_map_)
+	{
+		auto client = client_pair.second;
+		if (client)
+		{
+			delete client;
+		}
+	}
+	client_map_.clear();
+
+	for (const auto& client : client_buff_vec_)
+	{
+		if (client)
+		{
+			delete client;
+		}
+	}
+	client_buff_vec_.clear();
+}
+
 
 CellSendMsg2ClientTask::CellSendMsg2ClientTask(Client *client, DataHeader *data)
 {

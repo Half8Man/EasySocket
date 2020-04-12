@@ -2,6 +2,7 @@
 #define __CELL_TASK_H__
 
 #include "HeaderFile.h"
+#include "CellSemaphore.hpp"
 
 // 执行任务的服务类
 class CellTaskServer
@@ -15,6 +16,7 @@ public:
 	void AddTask(CellTask cell_task);
 
 	void Start();
+	void Close();
 
 	void OnRun();
 
@@ -30,6 +32,9 @@ private:
 
 	// 工作线程
 	std::thread *task_thread_ = nullptr;
+
+	bool is_run_ = false;
+	CellSemaphore cell_sem_;
 };
 
 #endif // !__CELL_TASK_H__

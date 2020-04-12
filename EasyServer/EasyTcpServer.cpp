@@ -118,7 +118,7 @@ void EasyTcpServer::Start(int cell_server_count)
 {
 	for (int i = 0; i < cell_server_count; i++)
 	{
-		CellServer *cell_server = new CellServer(svr_sock_, this);
+		CellServer *cell_server = new CellServer(i + 1, this);
 		cell_server_vec_.push_back(cell_server);
 		cell_server->Start();
 	}
@@ -143,8 +143,19 @@ void EasyTcpServer::AddClient2CellServer(Client *client)
 
 void EasyTcpServer::Close()
 {
+	printf("%s start\n", __FUNCTION__);
+
 	if (IsRun())
 	{
+		for (const auto& cell_server : cell_server_vec_)
+		{
+			if (cell_server)
+			{
+				delete cell_server;
+			}
+		}
+		cell_server_vec_.clear();
+
 #ifdef _WIN32
 		// 关闭服务端 socket
 		closesocket(svr_sock_);
@@ -156,6 +167,8 @@ void EasyTcpServer::Close()
 		close(svr_sock_);
 #endif // _WIN32
 	}
+
+	printf("%s end\n", __FUNCTION__);
 }
 
 bool EasyTcpServer::OnRun()

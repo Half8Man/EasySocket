@@ -17,7 +17,19 @@ public:
 		ResetSendTime();
 	}
 
-	virtual ~Client() = default;
+	virtual ~Client()
+	{
+		if (client_sock_ != INVALID_SOCKET)
+		{
+#ifdef _WIN32
+			closesocket(client_sock_);
+#else
+			close(client_sock_);
+#endif // _WIN32
+
+			client_sock_ = INVALID_SOCKET;
+		}
+	}
 
 	inline char *GetRecvDataBuffer()
 	{

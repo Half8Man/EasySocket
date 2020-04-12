@@ -5,6 +5,14 @@ const int kPort = 2234;
 
 class EasyTcpServer;
 
+bool is_run = true;
+void CmdThread()
+{
+	char input;
+	std::cin >> input;
+	is_run = false;
+}
+
 int main()
 {
 	EasyTcpServer server;
@@ -14,7 +22,10 @@ int main()
 	server.Listen(20);
 	server.Start(kCellServerCount);
 
-	while (server.IsRun())
+	std::thread input_thread(CmdThread);
+	input_thread.detach();
+
+	while (is_run)
 		server.OnRun();
 
 	server.Close();

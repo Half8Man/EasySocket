@@ -5,6 +5,7 @@
 #include "Client.hpp"
 #include "CellTask.h"
 #include "CELLTimeStamp.hpp"
+#include "CellSemaphore.hpp"
 
 class CellServer;
 
@@ -38,7 +39,7 @@ private:
 class CellServer
 {
 public:
-	CellServer(SOCKET sock, INetEvent *inet_event);
+	CellServer(int id, INetEvent *inet_event);
 
 	virtual ~CellServer();
 
@@ -48,7 +49,6 @@ public:
 	int GetClientCount() const;
 
 	bool OnRun();
-	bool IsRun();
 	int RecvData(Client *client);
 	void ReadData(fd_set& fd_read);
 	void CheckTime();
@@ -61,7 +61,9 @@ public:
 	void AddSendTask(Client *client, DataHeader *data);
 
 private:
-	SOCKET svr_sock_ = INVALID_SOCKET;					   // socket
+	void ClearClient();
+
+private:
 	std::unordered_map<SOCKET, Client *> client_map_ = {}; // 正式客户端map
 	std::vector<Client *> client_buff_vec_ = {};		   // 缓冲客户端vector
 
@@ -76,6 +78,9 @@ private:
 	CellTaskServer *cell_task_svr_ = nullptr;
 
 	time_t old_time_ = CellTime::GetCurTimeMilliSec();
+	bool is_run_ = false;
+	int id_ = -1;
+	CellSemaphore cell_sem_;
 };
 
 #endif // !__CELL_SERVER_H__

@@ -25,13 +25,28 @@ void CellTaskServer::AddTask(CellTask cell_task)
 
 void CellTaskServer::Start()
 {
+	is_run_ = true;
 	task_thread_ = new std::thread(std::mem_fn(&CellTaskServer::OnRun), this);
 	task_thread_->detach();
 }
 
+void CellTaskServer::Close()
+{
+	printf("%s start\n", __FUNCTION__);
+
+	if (is_run_)
+	{
+		is_run_ = false;
+		cell_sem_.Wait();
+	}
+
+	printf("%s end\n", __FUNCTION__);
+}
+
+
 void CellTaskServer::OnRun()
 {
-	while (true)
+	while (is_run_)
 	{
 		// 从缓冲区取出数据
 		if (!task_buffer_list_.empty())
@@ -62,4 +77,6 @@ void CellTaskServer::OnRun()
 		// 清空任务
 		task_list_.clear();
 	}
+
+	cell_sem_.WakeUp();
 }

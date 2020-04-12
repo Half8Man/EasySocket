@@ -20,6 +20,7 @@
 #endif
 
 // cpp
+#include <iostream>
 #include <unordered_map>
 #include <vector>
 #include <list>
@@ -28,6 +29,7 @@
 #include <mutex>
 #include <functional>
 #include <atomic>
+#include <condition_variable>
 
 // c
 #include <cstdio>
