@@ -25,7 +25,7 @@ public:
 	void AddClient2CellServer(Client *client);
 	void Close();
 
-	bool OnRun();
+	void OnRun(CellThread *cell_thread);
 	bool IsRun();
 
 	void Time4Pkg();
@@ -41,6 +41,8 @@ private:
 	std::atomic_int recv_count_;
 	std::atomic_int client_count_;
 	CellTimeStamp time_stamp_;
+
+	CellThread *cell_thread_ = nullptr;
 };
 
 #endif // !__EASY_TCP_SERVER_H__

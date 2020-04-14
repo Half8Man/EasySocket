@@ -1,14 +1,19 @@
 ﻿#include "EasyTcpServer.h"
 
 EasyTcpServer::EasyTcpServer()
-	: svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
+	: svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0), cell_thread_(nullptr), cell_server_vec_({})
 {
-	cell_server_vec_ = {};
 }
 
 EasyTcpServer::~EasyTcpServer()
 {
 	Close();
+
+	if (cell_thread_)
+	{
+		delete cell_thread_;
+		cell_thread_ = nullptr;
+	}
 }
 
 SOCKET EasyTcpServer::InitSock()
@@ -122,6 +127,20 @@ void EasyTcpServer::Start(int cell_server_count)
 		cell_server_vec_.push_back(cell_server);
 		cell_server->Start();
 	}
+
+	if (!cell_thread_)
+	{
+		cell_thread_ = new CellThread;
+		if (cell_thread_)
+		{
+			cell_thread_->Start(
+				nullptr,
+				[this](CellThread *cell_thread) {
+					OnRun(cell_thread);
+				},
+				nullptr);
+		}
+	}
 }
 
 void EasyTcpServer::AddClient2CellServer(Client *client)
@@ -143,11 +162,16 @@ void EasyTcpServer::AddClient2CellServer(Client *client)
 
 void EasyTcpServer::Close()
 {
-	printf("%s start\n", __FUNCTION__);
+	if (cell_thread_)
+	{
+		cell_thread_->Close();
+	}
 
 	if (IsRun())
 	{
-		for (const auto& cell_server : cell_server_vec_)
+		printf("%s start\n", __FUNCTION__);
+
+		for (const auto &cell_server : cell_server_vec_)
 		{
 			if (cell_server)
 			{
@@ -166,14 +190,16 @@ void EasyTcpServer::Close()
 		// 关闭服务端 socket
 		close(svr_sock_);
 #endif // _WIN32
-	}
 
-	printf("%s end\n", __FUNCTION__);
+		svr_sock_ = INVALID_SOCKET;
+
+		printf("%s end\n", __FUNCTION__);
+	}
 }
 
-bool EasyTcpServer::OnRun()
+void EasyTcpServer::OnRun(CellThread *cell_thread)
 {
-	if (IsRun())
+	while (cell_thread->IsRun())
 	{
 		Time4Pkg();
 
@@ -196,13 +222,13 @@ bool EasyTcpServer::OnRun()
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
-		timeval time_val = {0, 10};
+		timeval time_val = {0, 1};
 		int ret = select(int(max_sock) + 1, &fd_read, &fd_write, &fd_exp, &time_val);
 		if (ret < 0)
 		{
 			printf("select < 0, 任务结束\n");
-			Close();
-			return false;
+			cell_thread->Exit();
+			break;
 		}
 
 		if (FD_ISSET(svr_sock_, &fd_read))
@@ -211,11 +237,7 @@ bool EasyTcpServer::OnRun()
 
 			Accept();
 		}
-
-		return true;
 	}
-
-	return false;
 }
 
 bool EasyTcpServer::IsRun()

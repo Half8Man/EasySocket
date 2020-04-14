@@ -1,4 +1,4 @@
-#ifndef  __CELL_SEMAPHORE_HPP__
+ï»¿#ifndef __CELL_SEMAPHORE_HPP__
 #define __CELL_SEMAPHORE_HPP__
 
 #include "HeaderFile.h"
@@ -12,13 +12,12 @@ public:
 
 		if (--wait_count_ < 0)
 		{
-			// ×èÈûµÈ´ý
+			// é˜»å¡žç­‰å¾…
 			cv_.wait(
 				lock,
-				[this]()->bool {
+				[this]() -> bool {
 					return wakeup_count_ > 0;
-				}
-			);
+				});
 			wakeup_count_--;
 		}
 	}

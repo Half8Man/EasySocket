@@ -26,9 +26,15 @@ int main()
 	input_thread.detach();
 
 	while (is_run)
-		server.OnRun();
-
-	server.Close();
+	{
+		char cmd_buf[256] = {};
+		scanf("%s", cmd_buf);
+		if (strcmp(cmd_buf, "q") == 0)
+		{
+			server.Close();
+			break;
+		}
+	}
 
 	return 0;
 }

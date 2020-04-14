@@ -1,18 +1,16 @@
 ﻿#include "CellTask.h"
 
 CellTaskServer::CellTaskServer()
+	:task_list_({}), task_buffer_list_({}), cell_thread_(nullptr)
 {
-	task_list_ = {};
-	task_buffer_list_ = {};
-	task_thread_ = nullptr;
 }
 
 CellTaskServer::~CellTaskServer()
 {
-	if (task_thread_)
+	if (cell_thread_)
 	{
-		delete task_thread_;
-		task_thread_ = nullptr;
+		delete cell_thread_;
+		cell_thread_ = nullptr;
 	}
 }
 
@@ -25,28 +23,39 @@ void CellTaskServer::AddTask(CellTask cell_task)
 
 void CellTaskServer::Start()
 {
-	is_run_ = true;
-	task_thread_ = new std::thread(std::mem_fn(&CellTaskServer::OnRun), this);
-	task_thread_->detach();
+	if (!cell_thread_)
+	{
+		cell_thread_ = new CellThread;
+		if (cell_thread_)
+		{
+			cell_thread_->Start(
+				nullptr,
+				[this](CellThread* cell_thread)
+				{
+					OnRun(cell_thread);
+				},
+				nullptr
+			);
+		}
+	} 
 }
 
 void CellTaskServer::Close()
 {
 	printf("%s start\n", __FUNCTION__);
 
-	if (is_run_)
+	if (cell_thread_)
 	{
-		is_run_ = false;
-		cell_sem_.Wait();
+		cell_thread_->Close();
 	}
 
 	printf("%s end\n", __FUNCTION__);
 }
 
 
-void CellTaskServer::OnRun()
+void CellTaskServer::OnRun(CellThread* cell_thread)
 {
-	while (is_run_)
+	while (cell_thread->IsRun())
 	{
 		// 从缓冲区取出数据
 		if (!task_buffer_list_.empty())
@@ -77,6 +86,4 @@ void CellTaskServer::OnRun()
 		// 清空任务
 		task_list_.clear();
 	}
-
-	cell_sem_.WakeUp();
 }

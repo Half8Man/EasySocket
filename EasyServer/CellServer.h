@@ -5,7 +5,7 @@
 #include "Client.hpp"
 #include "CellTask.h"
 #include "CellTimeStamp.hpp"
-#include "CellSemaphore.hpp"
+#include "CellThread.hpp"
 
 class CellServer;
 
@@ -48,9 +48,9 @@ public:
 
 	int GetClientCount() const;
 
-	bool OnRun();
+	bool OnRun(CellThread *cell_thread);
 	int RecvData(Client *client);
-	void ReadData(fd_set& fd_read);
+	void ReadData(fd_set &fd_read);
 	void CheckTime();
 
 	virtual int OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header);
@@ -67,20 +67,18 @@ private:
 	std::unordered_map<SOCKET, Client *> client_map_ = {}; // 正式客户端map
 	std::vector<Client *> client_buff_vec_ = {};		   // 缓冲客户端vector
 
-	std::mutex client_mutex_;			 // 缓冲队列的锁
-	std::thread *work_thread_ = nullptr; // 工作线程
-	INetEvent *inet_event_ = nullptr;	 // 网络事件对象
+	std::mutex client_mutex_; // 缓冲队列的锁
 
 	fd_set fd_read_backup_;
-	bool is_clients_change_ = false;
-	SOCKET max_sock_ = 0;
 
+	INetEvent *inet_event_ = nullptr; // 网络事件对象
 	CellTaskServer *cell_task_svr_ = nullptr;
+	CellThread *cell_thread_ = nullptr;
 
 	time_t old_time_ = CellTime::GetCurTimeMilliSec();
-	bool is_run_ = false;
+	SOCKET max_sock_ = 0;
 	int id_ = -1;
-	CellSemaphore cell_sem_;
+	bool is_clients_change_ = false;
 };
 
 #endif // !__CELL_SERVER_H__

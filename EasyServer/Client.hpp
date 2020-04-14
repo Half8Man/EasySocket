@@ -128,7 +128,7 @@ public:
 	int SendData()
 	{
 		int ret = SOCKET_ERROR;
-		// 缓冲区有数据		
+		// 缓冲区有数据
 		if (send_last_pos_ > 0 && client_sock_ != INVALID_SOCKET)
 		{
 			// 发送数据
