@@ -15,7 +15,7 @@
 	#include <arpa/inet.h>
 	#include <string.h>
 
-	typedef int SOCKET
+	typedef int SOCKET;
 	#define INVALID_SOCKET (int)(~0)
 	#define SOCKET_ERROR (-1)
 #endif
