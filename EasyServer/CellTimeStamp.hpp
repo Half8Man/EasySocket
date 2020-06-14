@@ -5,17 +5,28 @@
 
 using namespace std::chrono;
 
-class CELLTimeStamp
+class CellTime
 {
 public:
-	CELLTimeStamp()
+	// 获取当前时间戳 毫秒
+	static time_t GetCurTimeMilliSec()
+	{
+		auto now = high_resolution_clock::now();
+
+		return duration_cast<milliseconds>(now.time_since_epoch()).count();
+	}
+};
+
+class CellTimeStamp
+{
+public:
+	CellTimeStamp()
 	{
 		Update();
 	}
 
-	virtual ~CELLTimeStamp()
+	virtual ~CellTimeStamp()
 	{
-
 	}
 
 	// 更新
@@ -42,6 +53,7 @@ public:
 		auto temp = high_resolution_clock::now() - begin_;
 		return duration_cast<microseconds>(temp).count();
 	}
+
 private:
 	time_point<high_resolution_clock> begin_; // 高分辨率时钟
 };

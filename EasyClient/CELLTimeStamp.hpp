@@ -15,7 +15,6 @@ public:
 
 	virtual ~CELLTimeStamp()
 	{
-
 	}
 
 	// 更新
@@ -42,6 +41,7 @@ public:
 		auto temp = high_resolution_clock::now() - begin_;
 		return duration_cast<microseconds>(temp).count();
 	}
+
 private:
 	time_point<high_resolution_clock> begin_; // 高分辨率时钟
 };

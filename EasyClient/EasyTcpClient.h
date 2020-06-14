@@ -1,21 +1,21 @@
-#ifndef __EASY_TCP_CLIENT__
+ï»¿#ifndef __EASY_TCP_CLIENT__
 #define __EASY_TCP_CLIENT__
 
 #ifdef _WIN32
 	#define WIN32_LEAN_AND_MEAN
 	#define _WINSOCK_DEPRECATED_NO_WARNINGS
-	//#define _CRT_SECURE_NO_WARNINGS
+	#define _CRT_SECURE_NO_WARNINGS
 	#define FD_SETSIZE 1024
 
-	#include<windows.h>
-	#include<WinSock2.h>
-	#pragma comment(lib,"ws2_32.lib")
+	#include <windows.h>
+	#include <WinSock2.h>
+	#pragma comment(lib, "ws2_32.lib")
 #else
-	#include<unistd.h>
-	#include<arpa/inet.h>
-	#include<string.h>
+	#include <unistd.h>
+	#include <arpa/inet.h>
+	#include <string.h>
 
-	typedef int SOCKET
+	typedef int SOCKET;
 	#define INVALID_SOCKET (int)(~0)
 	#define SOCKET_ERROR (-1)
 #endif
@@ -32,36 +32,36 @@ public:
 	EasyTcpClient();
 	virtual ~EasyTcpClient();
 
-	// ³õÊ¼»¯socket
+	// åˆå§‹åŒ–socket
 	SOCKET InitSocket();
 
-	// Á¬½Ó·şÎñ¶Ë
-	int Connect(const char* ip, unsigned short port);
+	// è¿æ¥æœåŠ¡ç«¯
+	int Connect(const char *ip, unsigned short port);
 
-	// ¹Ø±Õsocket;
+	// å…³é—­socket;
 	void Close();
 
-	// ·¢ËÍÊı¾İ
-	int SendData(DataHeader* data);
+	// å‘é€æ•°æ®
+	int SendData(DataHeader *data);
 
-	// ½ÓÊÜÊı¾İ£¬´¦ÀíÕ³°ü£¬²ğ·Ö°ü
+	// æ¥å—æ•°æ®ï¼Œå¤„ç†ç²˜åŒ…ï¼Œæ‹†åˆ†åŒ…
 	int OnRecvData();
 
-	int DealMsg(DataHeader* header);
+	int DealMsg(DataHeader *header);
 
-	// ´¦ÀíÍøÂçÏûÏ¢
+	// å¤„ç†ç½‘ç»œæ¶ˆæ¯
 	int OnRun();
 
-	// ÊÇ·ñ¹¤×÷
+	// æ˜¯å¦å·¥ä½œ
 	bool IsRun();
+
 private:
 	SOCKET client_sock_;
 
-	// Êı¾İ»º³åÇø
+	// æ•°æ®ç¼“å†²åŒº
 	char second_data_buffer_[kBufferSize] = {};
 
 	int last_pos = 0;
 };
 
 #endif // __EASY_TCP_CLIENT__
-

@@ -1,15 +1,19 @@
 ﻿#include "EasyTcpServer.h"
-#include "Alloctor.h"
 
 EasyTcpServer::EasyTcpServer()
-	:svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0)
+	: svr_sock_(INVALID_SOCKET), msg_count_(0), recv_count_(0), client_count_(0), cell_thread_(nullptr), cell_server_vec_({})
 {
-	cell_server_vec_ = {};
 }
 
 EasyTcpServer::~EasyTcpServer()
 {
 	Close();
+
+	if (cell_thread_)
+	{
+		delete cell_thread_;
+		cell_thread_ = nullptr;
+	}
 }
 
 SOCKET EasyTcpServer::InitSock()
@@ -26,9 +30,9 @@ SOCKET EasyTcpServer::InitSock()
 	WSADATA data;
 	(void)WSAStartup(version, &data);
 #endif // _Win32
-	
+
 	svr_sock_ = socket(PF_INET, SOCK_STREAM, IPPROTO_TCP);
-	
+
 	if (svr_sock_ == INVALID_SOCKET)
 	{
 		printf("建立socket失败\n");
@@ -42,7 +46,7 @@ SOCKET EasyTcpServer::InitSock()
 	return svr_sock_;
 }
 
-int EasyTcpServer::Bind(const char* ip, unsigned short port)
+int EasyTcpServer::Bind(const char *ip, unsigned short port)
 {
 	sockaddr_in sock_addr;
 	memset(&sock_addr, 0, sizeof(sockaddr_in));
@@ -58,7 +62,7 @@ int EasyTcpServer::Bind(const char* ip, unsigned short port)
 		sock_addr.sin_addr.s_addr = INADDR_ANY;
 	}
 
-	int ret = bind(svr_sock_, (sockaddr*)&sock_addr, sizeof(sock_addr));
+	int ret = bind(svr_sock_, (sockaddr *)&sock_addr, sizeof(sock_addr));
 
 	if (ret == SOCKET_ERROR)
 	{
@@ -98,9 +102,9 @@ SOCKET EasyTcpServer::Accept()
 	SOCKET client_sock = INVALID_SOCKET;
 
 #ifdef _WIN32
-	client_sock = accept(svr_sock_, (sockaddr*)&client_addr, &len);
+	client_sock = accept(svr_sock_, (sockaddr *)&client_addr, &len);
 #else
-	client_sock = accept(svr_sock_, (sockaddr*)&client_addr, (socklen_t*)&len);
+	client_sock = accept(svr_sock_, (sockaddr *)&client_addr, (socklen_t *)&len);
 #endif // _WIN32
 
 	if (client_sock == INVALID_SOCKET)
@@ -110,9 +114,7 @@ SOCKET EasyTcpServer::Accept()
 	else
 	{
 		//printf("新的客户端连接, socket : %d, ip : %s\n", int(client_sock), inet_ntoa(client_addr.sin_addr));
-		std::shared_ptr<Client> client(new Client(client_sock));
-		AddClient2CellServer(client);
-		//AddClient2CellServer(std::make_shared<Client>(client_sock));
+		AddClient2CellServer(new Client(client_sock));
 	}
 	return client_sock;
 }
@@ -121,13 +123,27 @@ void EasyTcpServer::Start(int cell_server_count)
 {
 	for (int i = 0; i < cell_server_count; i++)
 	{
-		auto cell_server = std::make_shared<CellServer>(svr_sock_, this);
+		CellServer *cell_server = new CellServer(i + 1, this);
 		cell_server_vec_.push_back(cell_server);
 		cell_server->Start();
 	}
+
+	if (!cell_thread_)
+	{
+		cell_thread_ = new CellThread;
+		if (cell_thread_)
+		{
+			cell_thread_->Start(
+				nullptr,
+				[this](CellThread *cell_thread) {
+					OnRun(cell_thread);
+				},
+				nullptr);
+		}
+	}
 }
 
-void EasyTcpServer::AddClient2CellServer(std::shared_ptr<Client> client)
+void EasyTcpServer::AddClient2CellServer(Client *client)
 {
 	if (client)
 	{
@@ -146,8 +162,24 @@ void EasyTcpServer::AddClient2CellServer(std::shared_ptr<Client> client)
 
 void EasyTcpServer::Close()
 {
+	if (cell_thread_)
+	{
+		cell_thread_->Close();
+	}
+
 	if (IsRun())
 	{
+		printf("%s start\n", __FUNCTION__);
+
+		for (const auto &cell_server : cell_server_vec_)
+		{
+			if (cell_server)
+			{
+				delete cell_server;
+			}
+		}
+		cell_server_vec_.clear();
+
 #ifdef _WIN32
 		// 关闭服务端 socket
 		closesocket(svr_sock_);
@@ -158,12 +190,16 @@ void EasyTcpServer::Close()
 		// 关闭服务端 socket
 		close(svr_sock_);
 #endif // _WIN32
+
+		svr_sock_ = INVALID_SOCKET;
+
+		printf("%s end\n", __FUNCTION__);
 	}
 }
 
-bool EasyTcpServer::OnRun()
+void EasyTcpServer::OnRun(CellThread *cell_thread)
 {
-	if (IsRun())
+	while (cell_thread->IsRun())
 	{
 		Time4Pkg();
 
@@ -186,13 +222,13 @@ bool EasyTcpServer::OnRun()
 
 		// nfds 是一个int，是指fd_set集合中所有socket的范围（最大值加1），而不是数量。
 		// windows 中可以传0
-		timeval time_val = { 0, 10 };
+		timeval time_val = {0, 1};
 		int ret = select(int(max_sock) + 1, &fd_read, &fd_write, &fd_exp, &time_val);
 		if (ret < 0)
 		{
 			printf("select < 0, 任务结束\n");
-			Close();
-			return false;
+			cell_thread->Exit();
+			break;
 		}
 
 		if (FD_ISSET(svr_sock_, &fd_read))
@@ -201,11 +237,7 @@ bool EasyTcpServer::OnRun()
 
 			Accept();
 		}
-
-		return true;
 	}
-
-	return false;
 }
 
 bool EasyTcpServer::IsRun()
@@ -218,7 +250,7 @@ void EasyTcpServer::Time4Pkg()
 	auto time_temp = time_stamp_.GetElapsedSecond();
 	if (time_temp >= 1.0)
 	{
-		printf("时间 : %lf, svr_sock : %d, 客户端数量 : %d, recv次数 : %d, msg数量 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp), int(msg_count_ / time_temp));
+		printf("时间 : %lf, svr_sock : %lld, 客户端数量 : %d, recv次数 : %d, msg数量 : %d\n", time_temp, svr_sock_, int(client_count_), int(recv_count_ / time_temp), int(msg_count_ / time_temp));
 		time_stamp_.Update();
 		recv_count_ = 0;
 		msg_count_ = 0;
@@ -226,26 +258,24 @@ void EasyTcpServer::Time4Pkg()
 }
 
 // 线程不安全
-void EasyTcpServer::OnJoin(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnJoin(Client *client)
 {
 	client_count_++;
 }
 
 // 线程不安全
-void EasyTcpServer::OnLeave(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnLeave(Client *client)
 {
 	client_count_--;
 }
 
 // 线程不安全
-void EasyTcpServer::OnNetMsg(CellServer* cell_svr, std::shared_ptr<Client>& client, DataHeader* header)
+void EasyTcpServer::OnNetMsg(CellServer *cell_svr, Client *client, DataHeader *header)
 {
 	msg_count_++;
 }
 
-void EasyTcpServer::OnNetRecv(std::shared_ptr<Client>& client)
+void EasyTcpServer::OnNetRecv(Client *client)
 {
 	recv_count_++;
 }
-
-

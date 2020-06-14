@@ -2,16 +2,24 @@
 #define __COMMON_DEF_H__
 
 // 接受数据缓冲区最小单元大小
-const int kRecvBufferSize = 10240 * 10;
+const int kRecvBufferSize = 10240;
 
 // 发送数据缓冲区最小单元大小
-const int kSendBufferSize = 10240 * 10;
+const int kSendBufferSize = 10240;
 
 // cell server 数量
 const int kCellServerCount = 4;
 
+// 死亡时间 毫秒
+const int kClientDeadTime = 60000;
+
+// 定时发送数据 毫秒
+const int kSendTime = 200;
+
 enum Cmd
 {
+	kCmdHeartBeatC2s,
+	kCmdHeartBeatS2c,
 	kCmdLogin,
 	kCmdLoginRet,
 	kCmdLogout,
@@ -29,7 +37,7 @@ struct DataHeader
 // DataPackage
 struct LoginData : public DataHeader
 {
-	LoginData()
+	LoginData() : DataHeader()
 	{
 		data_len = sizeof(LoginData);
 		cmd = Cmd::kCmdLogin;
@@ -41,7 +49,7 @@ struct LoginData : public DataHeader
 
 struct LoginRetData : public DataHeader
 {
-	LoginRetData()
+	LoginRetData() : DataHeader()
 	{
 		data_len = sizeof(LoginRetData);
 		cmd = Cmd::kCmdLoginRet;
@@ -53,7 +61,7 @@ struct LoginRetData : public DataHeader
 
 struct LogoutData : public DataHeader
 {
-	LogoutData()
+	LogoutData() : DataHeader()
 	{
 		data_len = sizeof(data_len);
 		cmd = Cmd::kCmdLogout;
@@ -64,7 +72,7 @@ struct LogoutData : public DataHeader
 
 struct LogoutRetData : public DataHeader
 {
-	LogoutRetData()
+	LogoutRetData() : DataHeader()
 	{
 		data_len = sizeof(LogoutRetData);
 		cmd = Cmd::kCmdLogoutRet;
@@ -76,13 +84,31 @@ struct LogoutRetData : public DataHeader
 
 struct NewUserJoinData : public DataHeader
 {
-	NewUserJoinData()
+	NewUserJoinData() : DataHeader()
 	{
 		data_len = sizeof(NewUserJoinData);
 		cmd = Cmd::kCmdNewUserJoin;
 	}
 
 	int sock = 0;
+};
+
+struct HeartBeatC2sData : public DataHeader
+{
+	HeartBeatC2sData() : DataHeader()
+	{
+		data_len = sizeof(HeartBeatC2sData);
+		cmd = Cmd::kCmdHeartBeatC2s;
+	}
+};
+
+struct HeartBeatS2cData : public DataHeader
+{
+	HeartBeatS2cData() : DataHeader()
+	{
+		data_len = sizeof(HeartBeatS2cData);
+		cmd = Cmd::kCmdHeartBeatS2c;
+	}
 };
 
 #endif // !__COMMON_DEF_H__
